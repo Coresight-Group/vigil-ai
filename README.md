@@ -1,5 +1,4 @@
 ---
----
 title: CoreSightGroup
 emoji: 📊
 colorFrom: black
@@ -10,4 +9,4 @@ pinned: false
 
 # CoreSightGroup
 
-Project files and data storage for embedding vector DB and DB Query Retrieval.
+Project files and data storage.
