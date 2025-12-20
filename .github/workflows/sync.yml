@@ -1,0 +1,28 @@
+name: Sync to Hugging Face
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.72024896 }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+          git remote add hf https://XE45:$HF_TOKEN@huggingface.co/spaces/XE45/CoreSightGroup || true
+          
+          git push hf main --force
