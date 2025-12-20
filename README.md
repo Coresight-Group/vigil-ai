@@ -1,8 +1,9 @@
 ---
+---
 title: CoreSightGroup
 emoji: 📊
-colorFrom: grey
-colorTo: yellow
+colorFrom: black
+colorTo: black
 sdk: static
 pinned: false
 ---
