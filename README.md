@@ -9,4 +9,4 @@ pinned: false
 
 # CoreSightGroup
 
-Project files and data storage.
+Project files and data storage for embedding vector DB and DB Query Retrieval.
