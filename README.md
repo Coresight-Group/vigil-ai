@@ -7,8 +7,6 @@ sdk: static
 pinned: false
 ---
 
-# CoreSightGroup
-
 # Risk Management Transformers
 
 > Dual-Model Architecture for Structured & Unstructured Risk Data
@@ -149,23 +147,89 @@ print(f"Embeddings shape: {embeddings.shape}")
 
 ### Embedding Generation Speed
 
-| Model Type | Processing Time |
-|------------|----------------|
-| Unstructured Model | ~400ms per chunk |
-| Structured Model | ~50ms per record |
-| Query Encoding | ~25ms |
+```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#666', 'secondaryColor': '#1a1a1a', 'tertiaryColor': '#0a0a0a'}}}%%
+graph LR
+    A[Unstructured Model<br/>400ms] ---|slowest| B[Processing Time]
+    C[Structured Model<br/>50ms] ---|fast| B
+    D[Query Encoding<br/>25ms] ---|fastest| B
+    
+    style A fill:#DAA520,stroke:#DAA520,color:#000
+    style C fill:#888,stroke:#888,color:#fff
+    style D fill:#fff,stroke:#fff,color:#000
+    style B fill:#1a1a1a,stroke:#333,color:#fff
+```
 
 ### Classification Accuracy
 
-| Risk Category | Accuracy |
-|---------------|----------|
-| Product Risk | 90.0% |
-| Service Risk | 82.5% |
-| Brand Risk | 97.5% |
+```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520'}}}%%
+graph TD
+    A[Model Accuracy] --> B[Product Risk: 90%]
+    A --> C[Service Risk: 82.5%]
+    A --> D[Brand Risk: 97.5%]
+    
+    style A fill:#1a1a1a,stroke:#DAA520,color:#DAA520
+    style B fill:#DAA520,stroke:#DAA520,color:#000
+    style C fill:#DAA520,stroke:#DAA520,color:#000,opacity:0.7
+    style D fill:#DAA520,stroke:#DAA520,color:#000,opacity:0.9
+```
 
 ---
 
 ## Architecture
+
+### Visual Data Flow
+
+```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#DAA520', 'secondaryColor': '#1a1a1a', 'tertiaryColor': '#0a0a0a'}}}%%
+flowchart LR
+    A[Input Data] -->|text/JSON| B[Preprocessing]
+    B -->|chunks/formatted| C[Tokenization]
+    C -->|token IDs| D[DistilBERT<br/>6 Layers]
+    D -->|token vectors| E[Mean Pooling]
+    E -->|pooled vector| F[Attention<br/>Enhancement]
+    F -->|enhanced| G[L2 Normalize]
+    G -->|768-dim vector| H[(Vector DB)]
+    
+    style A fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style B fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style C fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style D fill:#DAA520,stroke:#DAA520,color:#000
+    style E fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style F fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style G fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style H fill:#DAA520,stroke:#DAA520,color:#000
+```
+
+### Search Flow
+
+```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#DAA520'}}}%%
+flowchart TD
+    Q[User Query:<br/>"Asian supply problems"] -->|same pipeline| E[Generate<br/>Query Vector]
+    E --> S[Cosine Similarity<br/>Search]
+    
+    D1[(Chunk 1<br/>Vector)] -.->|0.94| S
+    D2[(Chunk 2<br/>Vector)] -.->|0.62| S
+    D3[(Chunk 3<br/>Vector)] -.->|0.31| S
+    
+    S --> R[Ranked Results]
+    R --> R1[1. Chunk 1: Supply chain...]
+    R --> R2[2. Chunk 2: Quality defects...]
+    R --> R3[3. Chunk 3: Service agreements...]
+    
+    style Q fill:#1a1a1a,stroke:#fff,color:#fff
+    style E fill:#DAA520,stroke:#DAA520,color:#000
+    style S fill:#DAA520,stroke:#DAA520,color:#000
+    style D1 fill:#1a1a1a,stroke:#DAA520,color:#DAA520
+    style D2 fill:#1a1a1a,stroke:#888,color:#888
+    style D3 fill:#1a1a1a,stroke:#666,color:#666
+    style R fill:#1a1a1a,stroke:#DAA520,color:#fff
+    style R1 fill:#1a1a1a,stroke:#DAA520,color:#DAA520
+    style R2 fill:#1a1a1a,stroke:#888,color:#888
+    style R3 fill:#1a1a1a,stroke:#666,color:#666
+```
 
 ### Detailed Data Flow
 
