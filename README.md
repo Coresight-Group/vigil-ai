@@ -1,566 +1,148 @@
 ---
-title: CoreSightGroup
-emoji:
-colorFrom: gray
-colorTo: yellow
+title: Risk Management Transformers
+emoji: 🔍
+colorFrom: black
+colorTo: gold
 sdk: static
 pinned: false
 ---
 
-
 # Risk Management Transformers
 
-> Dual-Model Architecture for Structured & Unstructured Risk Data
-
-[![DistilBERT-base](https://img.shields.io/badge/model-DistilBERT--base-DAA520?style=flat-square)](#)
-[![768-dim embeddings](https://img.shields.io/badge/embeddings-768--dim-DAA520?style=flat-square)](#)
-[![PyTorch](https://img.shields.io/badge/framework-PyTorch-DAA520?style=flat-square)](#)
-[![Hugging Face](https://img.shields.io/badge/🤗-Hugging%20Face-DAA520?style=flat-square)](#)
+A dual-model architecture for structured and unstructured risk data. This repository contains specialized transformer models built on distilbert-base-nli-mean-tokens for risk management applications, enabling semantic search and risk classification across products, services, and brand reputation.
 
 ## Overview
 
-A specialized transformer architecture built on `distilbert-base-nli-mean-tokens` for risk management applications. This repository contains two optimized models designed for different data types, enabling semantic search and risk classification across products, services, and brand reputation.
+This system provides two optimized models designed for different data types. The Unstructured Data Model uses semantic chunking with cosine similarity thresholds to intelligently process documents, reports, emails, and policy documents. The Structured Data Model uses template-based encoding for tabular data, processing database tables, JSON records, CSV data, and API responses.
 
----
+The models generate 768-dimensional embeddings using PyTorch and Hugging Face transformers. Both models are optimized for risk management tasks including semantic search, automated classification, and database vectorization.
 
-## Models
+## Unstructured Data Model
 
-### 📄 Unstructured Data Model
-**Semantic chunking with cosine similarity thresholds**
+The Unstructured Data Model is designed for long-form text processing. It excels at handling documents and reports, email threads, policy documents, news articles, and meeting notes. The model features intelligent sentence grouping with a 70% similarity threshold for continuing chunks and a 75% hard stop threshold for ending chunks. Each chunk contains a maximum of 6 sentences and uses mean pooling similarity for semantic analysis.
 
-**Best For:**
-- Documents and reports
-- Email threads
-- Policy documents
-- News articles
-- Meeting notes
+This model performs sentence-by-sentence analysis and is ideal for risk reports and incident narratives. The processing is slower than the structured model due to the semantic analysis required, but provides superior understanding of context and meaning in unstructured text.
 
-**Features:**
-- Intelligent sentence grouping
-- 70% similarity threshold
-- 75% hard stop threshold
-- Max 6 sentences per chunk
-- Mean pooling similarity
+## Structured Data Model
 
----
+The Structured Data Model processes tabular data efficiently. It works best with database tables, JSON records, CSV data, API responses, and structured logs. The model includes pre-built templates for common data formats, supports custom formatting, enables batch processing for large datasets, uses field attention mechanisms, and automatically converts data types.
 
-### 📊 Structured Data Model
-**Template-based encoding for tabular data**
-
-**Best For:**
-- Database tables
-- JSON records
-- CSV data
-- API responses
-- Structured logs
-
-**Features:**
-- Pre-built templates
-- Custom formatting
-- Batch processing
-- Field attention
-- Auto type conversion
-
----
+This model uses template-based formatting to convert structured data into natural language before embedding. Each database row becomes one embedding, making it much faster than the unstructured model. It's optimized for risk databases and compliance records.
 
 ## Model Comparison
 
-| Feature | Unstructured Model | Structured Model |
-|---------|-------------------|------------------|
-| **Input Type** | Long-form text, documents | Database rows, JSON objects |
-| **Chunking Strategy** | Semantic similarity-based | None (1 row = 1 embedding) |
-| **Processing Method** | Sentence-by-sentence analysis | Template-based formatting |
-| **Optimal Use Case** | Risk reports, incident narratives | Risk databases, compliance records |
-| **Performance** | Slower (semantic analysis) | Faster (direct encoding) |
+The Unstructured Model accepts long-form text and documents as input. It uses semantic similarity-based chunking and performs sentence-by-sentence analysis. This model is optimal for risk reports and incident narratives but has slower performance due to the semantic analysis required.
 
----
+The Structured Model accepts database rows and JSON objects as input. It doesn't use chunking, treating one row as one embedding. The processing method is template-based formatting. This model is optimal for risk databases and compliance records and offers faster performance through direct encoding.
 
 ## Installation
 
-```bash
-# Clone repository
-git clone https://github.com/yourusername/risk-management-transformers.git
-cd risk-management-transformers
+Clone the repository from GitHub. Navigate to the risk-management-transformers directory. Install the required dependencies including torch, transformers, sentence-transformers, and numpy using pip.
 
-# Install dependencies
-pip install torch transformers sentence-transformers numpy
-```
+## Quick Start with Unstructured Data
 
-## Quick Start
+To process unstructured data, first import and initialize the risk transformer model. Create a document containing your risk management text. The document might include information about supply chain disruptions in Asia, manufacturing delays affecting multiple product lines, quality control showing defects above threshold, and declining brand sentiment.
 
-### Unstructured Data Example
+Call the chunk_and_embed method to process the document. The model will automatically split it into semantic chunks, analyzing sentence similarity and grouping related sentences together. The maximum is 6 sentences per chunk, and chunking stops when similarity drops below 75%. The result includes the created chunks and their corresponding embeddings, with each embedding being a 768-dimensional vector.
 
-This example shows how to process a long document and automatically split it into semantic chunks. The model analyzes sentence similarity and groups related sentences together (max 6 sentences per chunk, stops when similarity drops below 75%).
+## Quick Start with Structured Data
 
-```python
-from risk_transformer import create_risk_transformer
+To process structured data, import and initialize the structured transformer model. Define your database rows as dictionaries containing fields like product_id, risk_category, severity, defect_rate, and region.
 
-# Initialize model
-model = create_risk_transformer()
-
-# Process long document with semantic chunking
-document = """
-Supply chain disruptions in Asia continue. Manufacturing 
-delays affect multiple product lines. Quality control shows 
-defects above threshold. Brand sentiment declining.
-"""
-
-# Chunk and embed
-chunks, embeddings = model.chunk_and_embed(document)
-
-print(f"Created {len(chunks)} semantic chunks")
-print(f"Embeddings shape: {embeddings.shape}")
-```
-
-### Structured Data Example
-
-This example converts database rows into text using templates, then generates embeddings. Each row becomes one 768-dimensional vector, making database records semantically searchable.
-
-```python
-from structured_transformer import create_structured_transformer
-
-# Initialize model
-model = create_structured_transformer()
-
-# Database rows
-records = [
-    {
-        "product_id": "PROD_001",
-        "risk_category": "Supply Chain",
-        "severity": "Critical",
-        "defect_rate": 0.15,
-        "region": "Asia"
-    }
-]
-
-# Encode with template
-embeddings = model.encode_structured_data(
-    records,
-    template_name='risk_record'
-)
-
-print(f"Embeddings shape: {embeddings.shape}")
-```
-
----
+Use the encode_structured_data method with a template name like 'risk_record'. The model converts each row into text using the template, then generates embeddings. Each row becomes one 768-dimensional vector, making database records semantically searchable. The resulting embeddings can be stored in a vector database for similarity search.
 
 ## Performance Metrics
 
-| Metric | Value |
-|--------|-------|
-| **Unstructured Model** | ~400ms per chunk |
-| **Structured Model** | ~50ms per record |
-| **Query Encoding** | ~25ms |
+The Unstructured Model processes chunks at approximately 400 milliseconds per chunk. The Structured Model processes records at approximately 50 milliseconds per record. Query encoding takes approximately 25 milliseconds regardless of model type.
 
-| Risk Category | Accuracy |
-|---------------|----------|
-| Product Risk | 90.0% |
-| Service Risk | 82.5% |
-| Brand Risk | 97.5% |
+Classification accuracy varies by risk category. Product Risk classification achieves 90.0% accuracy. Service Risk classification achieves 82.5% accuracy. Brand Risk classification achieves 97.5% accuracy.
 
----
+## Architecture and Data Flow
 
-## Architecture
+The system processes data through seven distinct phases. Understanding this flow helps you optimize performance and troubleshoot issues.
 
-### Detailed Data Flow
+### Phase 1: Data Ingestion and Preparation
 
-#### PHASE 1: Data Ingestion & Preparation
+The system first receives raw data and determines whether it's unstructured text like documents or structured data like database rows. For unstructured data, you might have a 5000-character risk report document describing supply chain operations experiencing critical disruption with primary suppliers reporting shutdowns.
 
-**Step 1A: Input Data Recognition**
+For structured data, you have a database row in JSON format containing fields like product_id, risk_category, severity, defect_rate, and region. The system examines the input and chooses the appropriate model. Long-form text uses the Unstructured Model while database records use the Structured Model.
 
-The system first receives raw data and determines whether it's unstructured text (like documents) or structured data (like database rows).
+### Phase 2: Preprocessing and Text Conversion
 
-```python
-# Unstructured: 5000-char risk report document
-"Our supply chain operations in Asian region experiencing 
-critical disruption. Primary suppliers reported shutdowns..."
+For unstructured data, the document is split into individual sentences using regex patterns that detect sentence boundaries like periods, question marks, and exclamation points. A typical document might split into sentences about supply chain operations experiencing disruption, suppliers reporting factory shutdowns, reduction in component availability, and defect rates above threshold.
 
-# Structured: Database row (JSON)
-{
-  "product_id": "PROD_X_500",
-  "risk_category": "Supply Chain",
-  "severity": "Critical",
-  "defect_rate": 0.15,
-  "region": "Southeast Asia"
-}
-```
+Each sentence is then embedded individually. Sentences are grouped based on semantic similarity. If two consecutive sentences have similarity of 70% or higher, they're added to the same chunk. If similarity drops below 75%, a new chunk starts. The maximum is 6 sentences per chunk. The result might be three semantic chunks covering supply chain topics, quality and customer topics, and SLA topics.
 
-**Step 1B: Model Selection**
+For structured data, the JSON object is converted into a natural language sentence using a predefined template. This makes structured data readable by the language model. A template might format the data as "Risk: Supply Chain, Severity: Critical, Product: PROD_X_500, Rate: 15.0%, Region: Southeast Asia" and so on.
 
-Based on the data type, the system chooses the appropriate model. Long-form text uses the Unstructured Model. Database records use the Structured Model.
+### Phase 3: Tokenization
 
----
+The text is broken into subword tokens, which are smaller units than words, using WordPiece tokenization. Each token is assigned a unique ID number that the neural network understands. Special tokens [CLS] and [SEP] mark the start and end of the sequence.
 
-#### PHASE 2: Preprocessing & Text Conversion
+For example, the text "Supply chain operations experiencing disruption" becomes tokens [CLS], supply, chain, operations, experiencing, disruption, and [SEP]. These are converted to IDs like 101, 4346, 4677, 3136, 13417, 20461, and 102. An attention mask is created where 1 indicates a real token and 0 indicates padding.
 
-**Step 2A: Unstructured - Sentence Splitting**
+### Phase 4: DistilBERT Neural Network Processing
 
-The document is split into individual sentences using regex patterns that detect sentence boundaries (periods, question marks, exclamation points).
+Each token ID is looked up in an embedding table and converted into a 768-dimensional vector. This is the initial numeric representation of each word. For instance, token ID 4346 representing "supply" becomes a vector with 768 numbers, and token ID 4677 representing "chain" becomes another 768-dimensional vector. The result is a matrix with dimensions of 7 tokens by 768 dimensions.
 
-```python
-# Input document split into sentences
-Sentence 1: "Supply chain operations experiencing disruption."
-Sentence 2: "Suppliers reported factory shutdowns."
-Sentence 3: "40% reduction in component availability."
-Sentence 4: "Defect rates at 15% above threshold."
-# ... 7 sentences total
-```
+Position embeddings are then added to each token's vector so the model knows the order of words. This allows the model to distinguish "supply chain" from "chain supply". Each position gets a small embedding added to the token embedding, making the final representation position-aware.
 
-**Step 2B: Unstructured - Semantic Chunking**
+The model has 6 transformer layers. In each layer, every token looks at all other tokens through self-attention. This allows words to understand their context. For example, "supply" learns it's related to "chain" because they frequently appear together. The self-attention mechanism creates Query, Key, and Value vectors for each token, calculates attention scores between all pairs of tokens, and produces weighted combinations. High attention between "supply" and "chain" means the model recognizes they form a meaningful phrase. Layers 2 through 6 refine these representations further.
 
-Each sentence is embedded individually. Then, sentences are grouped based on semantic similarity. If two consecutive sentences have similarity ≥70%, they're added to the same chunk. If similarity drops below 75%, a new chunk starts. Maximum 6 sentences per chunk.
+### Phase 5: Mean Pooling
 
-```python
-# Generate embedding for each sentence
-S1 → DistilBERT → [0.42, -0.15, 0.67, ...] (768 dims)
-S2 → DistilBERT → [0.44, -0.13, 0.65, ...] (768 dims)
+After the 6 transformer layers, we have a 768-dimensional vector for each token. Mean pooling averages all these token vectors into a single 768-dimensional vector that represents the entire chunk or sentence. 
 
-# Calculate similarity
-cosine_similarity(S1, S2) = 0.89
-# 0.89 ≥ 0.75 → ADD to chunk
+For our 7 tokens, we have vectors for [CLS], supply, chain, operations, experiencing, disruption, and [SEP]. Mean pooling averages all these vectors together by adding them up and dividing by 7. The result is one 768-dimensional vector for the entire chunk.
 
-# Continue until similarity drops
-cosine_similarity(mean([S1,S2,S3]), S4) = 0.62
-# 0.62 < 0.75 → STOP, start new chunk
+### Phase 6: Enhancement and Normalization
 
-# Result: 3 semantic chunks created
-Chunk 1: Sentences 1-3 (supply chain topic)
-Chunk 2: Sentences 4-6 (quality/customer topic)  
-Chunk 3: Sentence 7 (SLA topic)
-```
+A custom multi-head attention layer with 8 attention heads is applied to learn which aspects of the text are most important for risk management. This is learned during training on risk-specific data. The pooled vector passes through this risk attention layer and becomes enhanced with risk-specific patterns.
 
-**Step 2C: Structured - Template Formatting**
+The vector then passes through a linear projection layer and layer normalization. This stabilizes the values and prepares them for the final normalization step. The projection transforms the vector into the final embedding space, and layer normalization ensures stable training and inference.
 
-The JSON object is converted into a natural language sentence using a predefined template. This makes structured data readable by the language model.
+Finally, the vector is normalized to unit length with a magnitude of 1.0. This ensures cosine similarity calculations work correctly, as they measure the angle between vectors rather than their absolute magnitudes. The L2 norm is calculated by taking the square root of the sum of squared elements. Each element is then divided by this magnitude, creating a unit vector ready for cosine similarity comparisons.
 
-```python
-# Apply template to JSON data
-Template: "Risk: {risk_category}, Severity: {severity}, 
-          Product: {product_id}, Rate: {defect_rate}..."
+### Phase 7: Storage
 
-Output: "Risk: Supply Chain, Severity: Critical, 
-         Product: PROD_X_500, Rate: 15.0%, 
-         Region: Southeast Asia..."
-```
+The final 768-dimensional vector is stored in a vector database like Supabase with pgvector extension alongside the original text. A vector index is created for fast similarity searching. The database stores the chunk ID, the original content text, and the embedding as an array of 768 numbers. An index using ivfflat or similar algorithm enables fast approximate nearest neighbor search.
 
----
+### Search Flow
 
-#### PHASE 3: Tokenization
+When a user enters a search query, it goes through the exact same pipeline from phases 2 through 6 to generate a query vector. This vector is then compared against all stored vectors using cosine similarity. Results are ranked by similarity score, with higher scores indicating more semantic relevance.
 
-**Step 3A: Text to Tokens**
+For example, the query "Asian supply chain problems" is tokenized, processed through DistilBERT, mean pooled, enhanced with attention, and normalized into a query vector. This query vector is compared with every stored chunk vector using cosine similarity. A chunk about supply chain operations might have 0.94 similarity, a chunk about quality defects might have 0.62 similarity, and a chunk about service agreements might have 0.31 similarity. Results are sorted by similarity score and the top matches are returned.
 
-The text is broken into subword tokens (smaller than words) using WordPiece tokenization. Each token is assigned a unique ID number that the neural network understands. Special tokens [CLS] and [SEP] mark the start and end.
+## Core Components
 
-```python
-# Input text
-"Supply chain operations experiencing disruption"
-
-# Tokenized
-tokens = ["[CLS]", "supply", "chain", "operations", 
-          "experiencing", "disruption", "[SEP]"]
-
-# Convert to IDs
-token_ids = [101, 4346, 4677, 3136, 13417, 20461, 102]
-
-# Attention mask (1 = real token, 0 = padding)
-attention_mask = [1, 1, 1, 1, 1, 1, 1]
-```
-
----
-
-#### PHASE 4: DistilBERT Neural Network
-
-**Step 4A: Token Embedding Layer**
-
-Each token ID is looked up in an embedding table and converted into a 768-dimensional vector. This is the initial numeric representation of each word.
-
-```python
-# Embedding lookup
-token_id 4346 ("supply") → [0.156, 0.234, -0.089, ..., 0.123]
-token_id 4677 ("chain")  → [0.089, -0.076, 0.145, ..., 0.098]
-
-# Result: Matrix of [7 tokens × 768 dimensions]
-```
-
-**Step 4B: Positional Encoding**
-
-Position embeddings are added to each token's vector so the model knows the order of words. This allows the model to distinguish "supply chain" from "chain supply".
-
-```python
-# Token embedding + Position embedding
-Position 0: [0.156, 0.234, ...] + [0.001, 0.002, ...] = [0.157, 0.236, ...]
-Position 1: [0.089, -0.076, ...] + [0.002, 0.003, ...] = [0.091, -0.073, ...]
-
-# "chain supply" vs "supply chain" now have different vectors
-```
-
-**Step 4C: Transformer Layers (6 layers)**
-
-The model has 6 transformer layers. In each layer, every token "looks at" all other tokens through self-attention. This allows words to understand their context. For example, "supply" learns it's related to "chain" because they frequently appear together.
-
-```python
-# Layer 1: Self-Attention for "supply"
-
-# Step 1: Create Query, Key, Value vectors
-Query_supply = [0.234, -0.123, 0.456, ...]
-Key_supply   = [0.167, 0.289, -0.091, ...]
-Value_supply = [0.391, -0.145, 0.278, ...]
-
-# Step 2: Calculate attention with all tokens
-Attention(supply, supply) = 0.89
-Attention(supply, chain)  = 0.91  # High! They're related
-Attention(supply, operations) = 0.34
-
-# Step 3: Weighted sum of values
-New_supply = 0.18×Value_supply + 0.20×Value_chain + ...
-           = [0.287, -0.091, 0.356, ...]
-
-# "supply" now contains info about "chain"!
-# Layers 2-6 refine further...
-```
-
----
-
-#### PHASE 5: Mean Pooling
-
-**Step 5A: Aggregate Token Vectors**
-
-After the 6 transformer layers, we have a 768-dimensional vector for each token. Mean pooling averages all these token vectors into a single 768-dimensional vector that represents the entire chunk or sentence.
-
-```python
-# We have 7 token vectors, each 768-dimensional
-[CLS]:       [0.412, -0.234, 0.567, ..., 0.189]
-supply:      [0.445, -0.089, 0.623, ..., 0.234]
-chain:       [0.438, -0.092, 0.618, ..., 0.229]
-operations:  [0.391, -0.145, 0.578, ..., 0.198]
-experiencing:[0.456, -0.198, 0.634, ..., 0.245]
-disruption:  [0.512, -0.267, 0.689, ..., 0.278]
-[SEP]:       [0.334, -0.167, 0.489, ..., 0.178]
-
-# Mean pooling: Average all vectors
-pooled = ([0.412,...] + [0.445,...] + ... + [0.334,...]) / 7
-       = [0.427, -0.170, 0.600, ..., 0.221]
-
-# Result: ONE 768-dim vector for entire chunk
-```
-
----
-
-#### PHASE 6: Enhancement & Normalization
-
-**Step 6A: Risk-Specific Attention**
-
-A custom multi-head attention layer (8 attention heads) is applied to learn which aspects of the text are most important for risk management. This is learned during training on risk-specific data.
-
-```python
-# Apply multi-head attention (8 heads)
-pooled_vector = [0.427, -0.170, 0.600, ..., 0.221]
-                ↓
-risk_attention_layer(pooled_vector)
-                ↓
-enhanced = [0.445, -0.182, 0.615, ..., 0.234]
-
-# Model learns risk-specific patterns
-```
-
-**Step 6B: Projection & Layer Normalization**
-
-The vector passes through a linear projection layer and layer normalization. This stabilizes the values and prepares them for the final normalization step.
-
-```python
-# Project to final space
-projected = linear_layer(enhanced)
-          = [0.452, -0.189, 0.623, ..., 0.241]
-
-# Layer normalization
-normalized = layer_norm(projected)
-           = [0.448, -0.185, 0.619, ..., 0.238]
-```
-
-**Step 6C: L2 Normalization**
-
-The vector is normalized to unit length (magnitude of 1.0). This ensures cosine similarity calculations work correctly, as they measure the angle between vectors rather than their absolute magnitudes.
-
-```python
-# Calculate L2 norm (vector magnitude)
-magnitude = sqrt(0.448² + (-0.185)² + 0.619² + ... + 0.238²)
-          = 12.45
-
-# Divide each element by magnitude
-final_embedding = [0.448/12.45, -0.185/12.45, 0.619/12.45, ...]
-                = [0.036, -0.015, 0.050, ..., 0.019]
-
-# Now vector has length 1.0 (unit vector)
-# Ready for cosine similarity comparisons!
-```
-
----
-
-#### PHASE 7: Storage
-
-**Step 7A: Database Storage**
-
-The final 768-dimensional vector is stored in a vector database (like Supabase with pgvector extension) alongside the original text. A vector index is created for fast similarity searching.
-
-```sql
--- Store in database
-INSERT INTO risk_embeddings (
-    id,
-    content,
-    embedding
-) VALUES (
-    'chunk_001',
-    'Supply chain operations experiencing disruption...',
-    '[0.036, -0.015, 0.050, ..., 0.019]'  -- 768 numbers
-);
-
--- Create vector index for fast similarity search
-CREATE INDEX ON risk_embeddings 
-USING ivfflat (embedding vector_cosine_ops);
-```
-
----
-
-### SEARCH FLOW (When User Queries)
-
-When a user enters a search query, it goes through the exact same pipeline (Phases 2-6) to generate a query vector. This vector is then compared against all stored vectors using cosine similarity. Results are ranked by similarity score, with higher scores indicating more semantic relevance.
-
-```python
-# User enters query
-query = "Asian supply chain problems"
-
-# Query goes through SAME pipeline (Phases 2-6)
-query → Tokenize → DistilBERT → Mean Pool → Attention → Normalize
-      → query_vector = [0.038, -0.014, 0.052, ..., 0.020]
-
-# Calculate cosine similarity with ALL stored vectors
-similarity_1 = cosine(query_vector, chunk_001_vector) = 0.94
-similarity_2 = cosine(query_vector, chunk_002_vector) = 0.62
-similarity_3 = cosine(query_vector, chunk_003_vector) = 0.31
-
-# Sort by similarity, return top matches
-Results:
-  1. Chunk 001 (0.94) - "Supply chain operations experiencing..."
-  2. Chunk 002 (0.62) - "Quality defects increasing..."
-  3. Chunk 003 (0.31) - "Service agreements at risk..."
-```
-
----
-
-### Core Components
-
-- **Base Model:** distilbert-base-nli-mean-tokens (66M parameters)
-- **Pooling:** Mean token pooling with attention masking
-- **Enhancement:** Multi-head attention (8 heads)
-- **Classification:** Risk category (3 classes) + Severity (4 levels)
-- **Normalization:** L2 normalized embeddings for cosine similarity
-
----
+The base model is distilbert-base-nli-mean-tokens with 66 million parameters. It uses mean token pooling with attention masking to create sentence-level embeddings. Enhancement comes from multi-head attention with 8 heads for risk-specific learning. Classification includes risk category prediction with 3 classes for product, service, and brand risks, plus severity level prediction with 4 levels for low, medium, high, and critical. All embeddings are L2 normalized for cosine similarity comparisons.
 
 ## Use Cases
 
-### Semantic Risk Search
+Semantic Risk Search allows you to find similar risk incidents using natural language queries instead of exact keyword matches. The query is converted to a vector and compared against all stored risk vectors. You can search for "supply chain problems in Asia" and find semantically similar incidents even if they use different wording.
 
-This approach allows you to find similar risk incidents using natural language queries instead of exact keyword matches. The query is converted to a vector and compared against all stored risk vectors.
+Risk Classification enables the model to automatically categorize risk documents into predefined categories like Product, Service, or Brand. It also assigns severity levels like Low, Medium, High, or Critical based on patterns learned during training. This automates the triage and categorization process for incoming risk reports.
 
-```python
-query = "supply chain problems in Asia"
-query_embedding = model.encode_text(query)
-# Search vector database for similar risks
-```
-
-### Risk Classification
-
-The model can automatically categorize risk documents into predefined categories (Product, Service, Brand) and assign severity levels (Low, Medium, High, Critical) based on learned patterns.
-
-```python
-predictions = model.predict_risk_attributes(risk_text)
-print(predictions['predicted_categories'])
-print(predictions['predicted_severities'])
-```
-
-### Database Vectorization
-
-This process converts an entire database table into embeddings that can be semantically searched. Each row becomes a 768-dimensional vector stored alongside the original data.
-
-```python
-embeddings = model.batch_encode_database_table(
-    rows=database_rows,
-    template_name='risk_record'
-)
-# Store in vector database
-```
-
----
+Database Vectorization converts an entire database table into embeddings that can be semantically searched. Each row becomes a 768-dimensional vector stored alongside the original data. This enables natural language search over structured data, allowing queries like "show me critical risks in Asia" to find relevant database records.
 
 ## Configuration
 
-### Unstructured Model Parameters
+For the Unstructured Model, you can configure several parameters. The base model name defaults to sentence-transformers/distilbert-base-nli-mean-tokens. The embedding dimension is 768. You can set the number of risk categories, defaulting to 3 for product, service, and brand. Severity levels default to 4 for low, medium, high, and critical. The chunk minimum similarity threshold defaults to 0.70 for continuing chunks. The chunk stop threshold defaults to 0.75 for hard stops. The maximum sentences per chunk defaults to 6.
 
-These parameters control how the model processes long-form text documents. You can adjust chunking behavior, similarity thresholds, and classification categories.
+For the Structured Model, templates define how structured data is converted into natural language text before embedding. You can use built-in templates or create custom ones. Built-in templates include risk_record for general risk data, incident for incident reports, compliance for regulatory compliance records, and quality for quality control data. You can add custom templates by defining a template string with field placeholders.
 
-```python
-model = RiskManagementTransformer(
-    base_model_name="sentence-transformers/distilbert-base-nli-mean-tokens",
-    embedding_dim=768,
-    risk_categories=3,        # product, service, brand
-    severity_levels=4,        # low, medium, high, critical
-    chunk_min_similarity=0.70,  # Continue threshold
-    chunk_stop_threshold=0.75,  # Hard stop threshold
-    chunk_max_sentences=6       # Max sentences per chunk
-)
-```
+## Performance Specifications
 
-### Structured Model Templates
+Both models use 768-dimensional embeddings. The maximum input length is 512 tokens for both models. Inference speed on CPU is approximately 500 milliseconds per chunk for the Unstructured Model and approximately 50 milliseconds per record for the Structured Model. Batch processing handles 32 chunks per batch for the Unstructured Model and 64 records per batch for the Structured Model. GPU acceleration is supported for both models.
 
-Templates define how structured data (JSON objects, database rows) is converted into natural language text before embedding. You can use built-in templates or create custom ones.
+## License and Citation
 
-```python
-# Built-in templates
-templates = {
-    'risk_record': "Product ID: {product_id}, Risk: {risk_category}...",
-    'incident': "Incident ID: {incident_id}, Type: {type}...",
-    'compliance': "Regulation: {regulation}, Status: {status}...",
-    'quality': "Product: {product}, Defect Rate: {defect_rate}..."
-}
+This project is released under the MIT License, making it free for commercial and non-commercial use. When citing this work in research or publications, please reference it as Risk Management Transformers by the author, published in 2024 on Hugging Face.
 
-# Add custom template
-model.add_custom_template('my_template', "Field: {field}, Value: {value}")
-```
+## Technical Stack
 
----
+Built with Hugging Face transformers library for model architecture and pretrained weights. Uses PyTorch as the deep learning framework. Hosted and shared through GitHub for version control and collaboration.
 
-## Performance
+Copyright 2024 Risk Management Transformers
 
-| Metric | Unstructured Model | Structured Model |
-|--------|-------------------|------------------|
-| **Embedding Dimension** | 768 | 768 |
-| **Max Input Length** | 512 tokens | 512 tokens |
-| **Inference Speed (CPU)** | ~500ms per chunk | ~50ms per record |
-| **Batch Processing** | 32 chunks/batch | 64 records/batch |
-| **GPU Acceleration** | ✓ Supported | ✓ Supported |
 
----
-
-## License & Citation
-
-### License
-MIT License - Free for commercial and non-commercial use
-
-### Citation
-
-```bibtex
-@misc{risk-management-transformers,
-    title={Risk Management Transformers},
-    author={Your Name},
-    year={2024},
-    publisher={Hugging Face},
-    howpublished={\url{https://github.com/yourusername/risk-management-transformers}}
-}
-```
-
----
-
-Built with [Hugging Face](https://huggingface.co) • [PyTorch](https://pytorch.org) • [GitHub](https://github.com)
-
-© 2024 Risk Management Transformers
