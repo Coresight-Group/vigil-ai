@@ -206,34 +206,6 @@ flowchart LR
     style H fill:#DAA520,stroke:#DAA520,color:#000
 ```
 
-### Search Flow
-
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#DAA520'}}}%%
-flowchart TD
-    Q[User Query:<br/>"Asian supply problems"] -->|same pipeline| E[Generate<br/>Query Vector]
-    E --> S[Cosine Similarity<br/>Search]
-    
-    D1[(Chunk 1<br/>Vector)] -.->|0.94| S
-    D2[(Chunk 2<br/>Vector)] -.->|0.62| S
-    D3[(Chunk 3<br/>Vector)] -.->|0.31| S
-    
-    S --> R[Ranked Results]
-    R --> R1[1. Chunk 1: Supply chain...]
-    R --> R2[2. Chunk 2: Quality defects...]
-    R --> R3[3. Chunk 3: Service agreements...]
-    
-    style Q fill:#1a1a1a,stroke:#fff,color:#fff
-    style E fill:#DAA520,stroke:#DAA520,color:#000
-    style S fill:#DAA520,stroke:#DAA520,color:#000
-    style D1 fill:#1a1a1a,stroke:#DAA520,color:#DAA520
-    style D2 fill:#1a1a1a,stroke:#888,color:#888
-    style D3 fill:#1a1a1a,stroke:#666,color:#666
-    style R fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style R1 fill:#1a1a1a,stroke:#DAA520,color:#DAA520
-    style R2 fill:#1a1a1a,stroke:#888,color:#888
-    style R3 fill:#1a1a1a,stroke:#666,color:#666
-```
 
 ### Detailed Data Flow
 
