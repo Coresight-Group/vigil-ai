@@ -2,7 +2,7 @@
 title: Risk Management Transformers
 emoji: 🔍
 colorFrom: black
-colorTo: gold
+colorTo: grey
 sdk: static
 pinned: false
 ---
