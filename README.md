@@ -16,8 +16,6 @@ pinned: false
 [![PyTorch](https://img.shields.io/badge/framework-PyTorch-DAA520?style=flat-square)](#)
 [![Hugging Face](https://img.shields.io/badge/🤗-Hugging%20Face-DAA520?style=flat-square)](#)
 
----
-
 ## Overview
 
 A specialized transformer architecture built on `distilbert-base-nli-mean-tokens` for risk management applications. This repository contains two optimized models designed for different data types, enabling semantic search and risk classification across products, services, and brand reputation.
@@ -86,8 +84,6 @@ cd risk-management-transformers
 # Install dependencies
 pip install torch transformers sentence-transformers numpy
 ```
-
----
 
 ## Quick Start
 
