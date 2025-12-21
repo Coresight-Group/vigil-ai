@@ -149,63 +149,21 @@ print(f"Embeddings shape: {embeddings.shape}")
 
 ## Performance Metrics
 
-### Embedding Generation Speed
+| Metric | Value |
+|--------|-------|
+| **Unstructured Model** | ~400ms per chunk |
+| **Structured Model** | ~50ms per record |
+| **Query Encoding** | ~25ms |
 
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#666', 'secondaryColor': '#1a1a1a', 'tertiaryColor': '#0a0a0a'}}}%%
-graph LR
-    A[Unstructured Model<br/>400ms] ---|slowest| B[Processing Time]
-    C[Structured Model<br/>50ms] ---|fast| B
-    D[Query Encoding<br/>25ms] ---|fastest| B
-    
-    style A fill:#DAA520,stroke:#DAA520,color:#000
-    style C fill:#888,stroke:#888,color:#fff
-    style D fill:#fff,stroke:#fff,color:#000
-    style B fill:#1a1a1a,stroke:#333,color:#fff
-```
-
-### Classification Accuracy
-
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520'}}}%%
-graph TD
-    A[Model Accuracy] --> B[Product Risk: 90%]
-    A --> C[Service Risk: 82.5%]
-    A --> D[Brand Risk: 97.5%]
-    
-    style A fill:#1a1a1a,stroke:#DAA520,color:#DAA520
-    style B fill:#DAA520,stroke:#DAA520,color:#000
-    style C fill:#DAA520,stroke:#DAA520,color:#000,opacity:0.7
-    style D fill:#DAA520,stroke:#DAA520,color:#000,opacity:0.9
-```
+| Risk Category | Accuracy |
+|---------------|----------|
+| Product Risk | 90.0% |
+| Service Risk | 82.5% |
+| Brand Risk | 97.5% |
 
 ---
 
 ## Architecture
-
-### Visual Data Flow
-
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor': '#DAA520', 'primaryTextColor': '#fff', 'primaryBorderColor': '#DAA520', 'lineColor': '#DAA520', 'secondaryColor': '#1a1a1a', 'tertiaryColor': '#0a0a0a'}}}%%
-flowchart LR
-    A[Input Data] -->|text/JSON| B[Preprocessing]
-    B -->|chunks/formatted| C[Tokenization]
-    C -->|token IDs| D[DistilBERT<br/>6 Layers]
-    D -->|token vectors| E[Mean Pooling]
-    E -->|pooled vector| F[Attention<br/>Enhancement]
-    F -->|enhanced| G[L2 Normalize]
-    G -->|768-dim vector| H[(Vector DB)]
-    
-    style A fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style B fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style C fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style D fill:#DAA520,stroke:#DAA520,color:#000
-    style E fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style F fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style G fill:#1a1a1a,stroke:#DAA520,color:#fff
-    style H fill:#DAA520,stroke:#DAA520,color:#000
-```
-
 
 ### Detailed Data Flow
 
