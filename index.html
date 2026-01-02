@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIGIL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Chat Messages -->
+        <div class="messages" id="messages">
+            <div class="welcome">
+                <h1>VIGIL</h1>
+                <p>Risk Management</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-section">
+            <button class="attach-btn" id="attachBtn">+</button>
+            <textarea 
+                id="input" 
+                class="input"
+                placeholder="Describe your risk..."
+                rows="1"
+            ></textarea>
+            <button class="send-btn" id="sendBtn">Send</button>
+            
+            <!-- Hidden File Inputs -->
+            <input type="file" id="docInput" hidden accept=".txt,.pdf,.doc,.docx,.xlsx,.csv">
+            <input type="file" id="photoInput" hidden accept="image/*">
+            <input type="file" id="audioInput" hidden accept="audio/*">
+            <input type="file" id="videoInput" hidden accept="video/*">
+
+            <!-- Attachment Menu -->
+            <div class="attach-menu" id="attachMenu">
+                <button class="menu-item" id="docBtn">Document</button>
+                <button class="menu-item" id="photoBtn">Photo</button>
+                <button class="menu-item" id="audioBtn">Audio</button>
+                <button class="menu-item" id="videoBtn">Video</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

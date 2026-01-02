@@ -1,0 +1,39 @@
+title: VIGIL Risk Intelligence
+description: Enterprise Risk Intelligence with Dual-Source Synthesis
+sdk: docker
+pinned: false
+tags:
+  - risk-management
+  - enterprise
+  - ai
+  - transformers
+  - supabase
+
+# Environment variables
+env:
+  - name: XAI_API_KEY
+    description: X.AI API key for Grok integration
+  - name: SUPABASE_URL
+    description: Supabase project URL
+  - name: SUPABASE_KEY
+    description: Supabase anon key
+  - name: FLASK_ENV
+    default: production
+
+# Space configuration
+persistent_storage:
+  - path: /app/data
+    size: 10
+
+# Hardware requirements
+hardware:
+  - cpu-basic
+  - cpu-upgrade
+  - t4
+  - a10g
+
+# Health check
+healthcheck:
+  enabled: true
+  endpoint: /api/health
+  

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  vigil-app:
+    build: .
+    container_name: vigil-risk-management
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - vigil-network
+
+networks:
+  vigil-network:
+    driver: bridge
