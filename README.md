@@ -2,7 +2,7 @@
 title: VIGIL Risk Intelligence
 emoji: 🛡️
 colorFrom: yellow
-colorTo: yellow
+colorTo: gray
 sdk: docker
 app_file: app.py
 app_port: 5000
@@ -379,8 +379,8 @@ python push_both.py
 ```
 
 Deploys to:
-- Model: https://huggingface.co/YOUR_ORG/dual-path-transformer
-- Space: https://huggingface.co/spaces/YOUR_ORG/dual-path-transformer
+- Model: https://huggingface.co/CoreSightGroup/dual-path-transformer
+- Space: https://huggingface.co/spaces/CoreSightGroup/dual-path-transformer
 
 ---
 
