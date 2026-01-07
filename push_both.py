@@ -90,9 +90,7 @@ try:
         folder_path=".",
         repo_id=HF_MODEL_ID,
         repo_type="model",
-        token=hf_token,
-        multi_commit=True,
-        multi_commit_pr=False
+        token=hf_token
     )
     print("✓ HF Model pushed successfully")
 except Exception as e:
@@ -111,9 +109,7 @@ try:
         folder_path=".",
         repo_id=HF_MODEL_ID,
         repo_type="space",
-        token=hf_token,
-        multi_commit=True,
-        multi_commit_pr=False
+        token=hf_token
     )
     print("✓ HF Space pushed successfully")
 except Exception as e:
