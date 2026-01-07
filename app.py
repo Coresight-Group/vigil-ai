@@ -1,17 +1,41 @@
-from flask import Flask, request, jsonify
+"""
+VIGIL Flask Application - Risk Management API
+Serves interconnected risk analysis with dual-source synthesis
+"""
+
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 import torch
-from dualpathtransformer import DualPathRiskTransformer
 import os
 import json
+import time
+import logging
 from datetime import datetime
 import requests
 from supabase import create_client, Client
-import numpy as np
-from typing import Dict, List, Optional, Tuple
-import uuid
+from dotenv import load_dotenv
 
-# Import VIGIL utilities and configuration
+# Load environment variables
+load_dotenv()
+
+# =========================================================================
+# IMPORTS - Fixed ordering and error handling
+# =========================================================================
+
+try:
+    from main import (
+        create_dual_path_transformer,
+        DualPathRiskTransformer,
+        GrokIntelligenceEngine,
+        RiskCorrelationEngine,
+        SchemaValidator,
+        DocumentStore
+    )
+except ImportError as e:
+    print(f"ERROR: Cannot import from main: {e}")
+    print("Make sure main.py exists in the same directory")
+    exit(1)
+
 try:
     from utils import (
         create_synthesis_statement, determine_consensus_level,
@@ -21,48 +45,134 @@ try:
         validate_problem, validate_alert
     )
 except ImportError:
-    print("Note: utils.py not found - using inline implementations")
+    print("Warning: utils.py not found - some features unavailable")
 
 try:
     import config
 except ImportError:
-    print("Note: config.py not found - using default configuration")
+    print("Warning: config.py not found - using environment defaults")
+    config = None
 
-# Initialize Flask app
+# =========================================================================
+# LOGGING SETUP
+# =========================================================================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s in %(name)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# =========================================================================
+# FLASK APP INITIALIZATION
+# =========================================================================
+
 app = Flask(__name__)
-CORS(app)
 
-# Environment variables
-SUPABASE_URL = os.getenv('SUPABASE_URL', 'your_supabase_url')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your_supabase_key')
-XAI_API_KEY = os.getenv('XAI_API_KEY', 'your_xai_api_key')
+# CORS configuration - FIXED for production
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ALLOWED_ORIGINS,
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type"],
+        "max_age": 3600,
+        "supports_credentials": False
+    }
+})
+
+# =========================================================================
+# ENVIRONMENT VARIABLES - Properly secured
+# =========================================================================
+
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+XAI_API_KEY = os.getenv('XAI_API_KEY')
 XAI_API_URL = 'https://api.x.ai/v1/chat/completions'
+FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 
-# Initialize Supabase client
+# Validate required env vars
+if not all([SUPABASE_URL, SUPABASE_KEY, XAI_API_KEY]):
+    logger.warning("Missing required environment variables:")
+    logger.warning(f"  SUPABASE_URL: {'✓' if SUPABASE_URL else '✗'}")
+    logger.warning(f"  SUPABASE_KEY: {'✓' if SUPABASE_KEY else '✗'}")
+    logger.warning(f"  XAI_API_KEY: {'✓' if XAI_API_KEY else '✗'}")
+
+# =========================================================================
+# DATABASE INITIALIZATION
+# =========================================================================
+
+SUPABASE_CONNECTED = False
+supabase = None
+
 try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    # Test connection
+    health = supabase.table('risks').select('id').limit(1).execute()
     SUPABASE_CONNECTED = True
+    logger.info("✓ Supabase connection successful")
 except Exception as e:
-    print(f"Supabase connection error: {e}")
+    logger.error(f"✗ Supabase connection failed: {e}")
     SUPABASE_CONNECTED = False
 
-# Initialize model
+# =========================================================================
+# TRANSFORMER INITIALIZATION
+# =========================================================================
+
+MODEL_LOADED = False
+transformer = None
+
 try:
-    model = DualPathRiskTransformer()
-    model.eval()
+    transformer = create_dual_path_transformer(
+        grok_api_key=XAI_API_KEY,
+        supabase_client=supabase if SUPABASE_CONNECTED else None
+    )
     MODEL_LOADED = True
+    logger.info("✓ VIGIL Dual-Path Transformer Initialized")
+    logger.info("  Components: GrokIntelligenceEngine, RiskCorrelationEngine,")
+    logger.info("             SchemaValidator, DocumentStore")
 except Exception as e:
-    print(f"Error loading model: {e}")
-    model = None
+    logger.error(f"✗ Error loading transformer: {e}")
     MODEL_LOADED = False
 
-# Store conversation history
-conversation_history = []
-alerts_database = []
+# =========================================================================
+# REQUEST LOGGING & MONITORING
+# =========================================================================
 
-# ═══════════════════════════════════════════════════════════════
+@app.before_request
+def before_request():
+    """Log incoming request"""
+    g.start_time = time.time()
+    logger.debug(f"{request.method} {request.path} from {request.remote_addr}")
+
+@app.after_request
+def after_request(response):
+    """Log outgoing response"""
+    duration = time.time() - g.start_time
+    logger.debug(f"Response: {response.status_code} ({duration:.3f}s)")
+    return response
+
+# =========================================================================
+# ERROR HANDLERS
+# =========================================================================
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({'success': False, 'error': 'Bad request'}), 400
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'success': False, 'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal server error: {error}")
+    return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+# =========================================================================
 # SYSTEM PROMPTS
-# ═══════════════════════════════════════════════════════════════
+# =========================================================================
 
 SYNTHESIS_SYSTEM_PROMPT = """You are VIGIL, enterprise risk management analyst.
 
@@ -78,756 +188,341 @@ FORMAT:
 
 1. EXPLICIT PROBLEM ANSWERED
    - Direct answer to what user asked
-   - Clear and concise
-   
-2. INFERRED PROBLEMS EXPLAINED
-   - What data suggests (from both sources)
-   - Why it matters
-   - Confidence level
-   
-3. SOLUTIONS OFFERED
-   - Your Proven Solutions (Private Source) with success rates
-   - Industry Best Practices (Vigil) with benchmarks
-   - Hybrid Recommendations (combining both)
-   
-4. SYNTHESIS STATEMENT
-   - How both sources align or differ
-   - Consensus level (HIGH/MEDIUM/LOW)
-   - Confidence score
-   
-5. RECOMMENDATIONS
-   - Immediate actions (your proven approaches)
-   - Short-term (add industry resilience)
-   - Long-term (strategic improvements)
+   - Confidence level (high/medium/low)
 
-CRITICAL RULES:
-✓ Always cite source: (Private Source) or (Vigil)
-✓ Show when sources agree (highest confidence)
-✓ Explain why each source matters
-✓ Rank by: Consensus × Effectiveness × Cost-Efficiency
-✓ Format based on question type:
-  - Pattern questions: Structured Analysis (YES/NO → Evidence → Confidence)
-  - Action questions: Prioritized Actions (Immediate → Short → Medium → Long)
-  - Comparison questions: Comparison Matrix (Side-by-side → Scoring → Winner)
+2. EVIDENCE (FROM BOTH SOURCES)
+   - Private Source evidence (our history)
+   - Vigil evidence (industry knowledge)
+   - Where they agree/disagree
 
-Remember: Synthesis = Your proven success + Industry wisdom = Best outcome
+3. ANALYSIS (WITH INTERCONNECTED RISK CONTEXT)
+   - Self-conflicts identified
+   - Historical precedents
+   - Recurring patterns
+   - Cascading effects on other risks
+   - Timeline correlations
+
+4. RECOMMENDATIONS (PRIORITIZED)
+   - What to do (from proven solutions)
+   - Timeline (immediate/short/long-term)
+   - Success likelihood (based on history + industry)
+
+5. GOVERNANCE ALERT
+   - Policy violations if any
+   - Escalation path
+   - Decision authority needed
 """
 
-FORMAT_DETECTION_PROMPT = """Analyze this question and identify its type:
+# =========================================================================
+# HELPER FUNCTIONS
+# =========================================================================
 
-Question: "{question}"
-
-Types:
-1. PATTERN_DETECTION: "Is this a pattern?", "Are we seeing a trend?", "Is this accelerating?"
-   Format: Structured Analysis (YES/NO → Evidence → Precedent → Confidence → Implications)
-
-2. ACTION_PLAN: "What should we do?", "How do we fix this?", "What are next steps?"
-   Format: Prioritized Actions (Immediate → Short → Medium → Long with Owner/Timeline/Cost)
-
-3. COMPARISON: "Compare X to Y?", "Which is worse?", "How does A compare to B?"
-   Format: Comparison Matrix (Side-by-side table → Scoring → Differentiators → Winner)
-
-4. IMPACT_ASSESSMENT: "How bad is this?", "What's the impact?", "How serious?"
-   Format: Impact Pyramid (Financial → Operational → Strategic with progressively more detail)
-
-5. ROOT_CAUSE_INVESTIGATION: "What happened?", "Why did this occur?", "What caused this?"
-   Format: Timeline + Root Cause Narrative (Chronological → Causes → Contributing Factors → Preventability)
-
-6. STRATEGIC_PLANNING: "What's our risk profile?", "Where are we vulnerable?", "Strategic assessment?"
-   Format: Strategic Framework (Risk heat map → Categories → Trends → Strategic Implications)
-
-7. GENERAL_ANALYSIS: If none of above clearly fit
-   Format: Structured Institutional (Classification → Analysis → Recommendations → Governance)
-
-Respond with ONLY the type name, nothing else. Example: "PATTERN_DETECTION"
-"""
-
-# ═══════════════════════════════════════════════════════════════
-# DUAL-SOURCE PROBLEM DETECTION
-# ═══════════════════════════════════════════════════════════════
-
-def detect_problems_dual_source(
-    user_message: str,
-    embedding_vector: List[float],
-    similar_incidents: List[Dict],
-    company_data: Dict
-) -> Dict:
-    """
-    Detect problems from BOTH Supabase (Private Source) and Grok (Vigil).
-    Synthesize with attribution.
-    """
+def format_interconnected_analysis(analysis):
+    """Format interconnected risk analysis results for display"""
     
-    # Private Source: Detect from Supabase data
-    private_source_problems = detect_supabase_problems(
-        similar_incidents=similar_incidents,
-        company_data=company_data
-    )
+    formatted = "\n" + "="*60 + "\n"
+    formatted += "INTERCONNECTED RISK ANALYSIS\n"
+    formatted += "="*60 + "\n"
     
-    # Vigil: Get context from Grok
-    vigil_problems = query_grok_for_problems(
-        user_message=user_message,
-        similar_incidents=similar_incidents,
-        company_context=company_data,
-        private_source_problems=private_source_problems
-    )
+    # Self-conflicts
+    if analysis.get('self_conflicts'):
+        formatted += "\n⚠️ INTERNAL CONFLICTS DETECTED\n"
+        for conflict in analysis['self_conflicts'][:2]:
+            formatted += f"  • {conflict.get('description')}\n"
     
-    # Synthesize
-    synthesized = synthesize_problems(private_source_problems, vigil_problems)
+    # Historical matches
+    if analysis.get('historical_matches'):
+        formatted += f"\n📊 HISTORICAL PRECEDENTS ({len(analysis['historical_matches'])})\n"
+        for match in analysis['historical_matches'][:2]:
+            desc = match['original_description'][:80]
+            sim = match.get('similarity_score', 0.0)
+            date = match['original_date'][:10]
+            formatted += f"  • {desc}...\n"
+            formatted += f"    Similarity: {sim:.1%} | Date: {date}\n"
     
-    return {
-        'private_source_problems': private_source_problems,
-        'vigil_problems': vigil_problems,
-        'synthesized_problems': synthesized,
-        'consensus_problems': [p for p in synthesized if p.get('consensus') == 'HIGH']
-    }
-
-
-def detect_supabase_problems(similar_incidents: List[Dict], company_data: Dict) -> List[Dict]:
-    """Detect problems from your company's incident history (Private Source)"""
+    # Recurring patterns
+    if analysis.get('recurring_patterns'):
+        pattern = analysis['recurring_patterns'][0]
+        formatted += f"\n🔄 RECURRING PATTERN\n"
+        formatted += f"  • {pattern['description']}\n"
+        formatted += f"  • Severity: {pattern['severity'].upper()}\n"
     
-    problems = []
+    # Cascading effects
+    if analysis.get('cascading_effects'):
+        formatted += f"\n⚡ CASCADING EFFECTS ({len(analysis['cascading_effects'])})\n"
+        for effect in analysis['cascading_effects'][:2]:
+            affected = effect['affected_description'][:60]
+            formatted += f"  • {effect['affected_risk_type']}: {affected}...\n"
     
-    # Problem 1: Geographic Concentration
-    if company_data.get('suppliers'):
-        high_concentration = [
-            s for s in company_data['suppliers'] 
-            if s.get('concentration', 0) > 0.15
-        ]
-        
-        if high_concentration:
-            problems.append({
-                'type': 'GEOGRAPHIC_CONCENTRATION',
-                'problem': f"Geographic concentration exceeds policy ({high_concentration[0]['concentration']:.0%} > 15%)",
-                'source': 'Private Source',
-                'evidence': [f"{s['name']}: {s['concentration']:.0%}" for s in high_concentration],
-                'severity': 'HIGH',
-                'confidence': 0.95
-            })
+    # Timeline correlation
+    if analysis.get('timeline_correlations'):
+        corr = analysis['timeline_correlations'][0]
+        count = corr.get('related_events_count', 0)
+        window = corr.get('window_days', 14)
+        formatted += f"\n📅 TIMELINE CORRELATION\n"
+        formatted += f"  • {count} related risks in {window}-day window\n"
     
-    # Problem 2: Incident Frequency Acceleration
-    if company_data.get('incident_frequency'):
-        if company_data['incident_frequency'] > 1.6:
-            problems.append({
-                'type': 'FREQUENCY_ACCELERATION',
-                'problem': f"Incident frequency {company_data['incident_frequency']:.1f}/year exceeds policy 1.6/year",
-                'source': 'Private Source',
-                'evidence': ['2024 incidents exceeding baseline', 'Acceleration trend +44% YoY'],
-                'severity': 'HIGH',
-                'confidence': 0.92
-            })
+    # Grok intelligence
+    grok = analysis.get('grok_intelligence', {})
+    if grok.get('context', {}).get('success'):
+        findings = grok['context'].get('findings', '')[:200]
+        formatted += f"\n🌐 INDUSTRY INTELLIGENCE (from Grok)\n"
+        formatted += f"  {findings}...\n"
     
-    return problems
+    formatted += "\n" + "="*60 + "\n"
+    return formatted
 
-
-def query_grok_for_problems(
-    user_message: str,
-    similar_incidents: List[Dict],
-    company_context: Dict,
-    private_source_problems: List[Dict]
-) -> List[Dict]:
-    """Ask Grok: What problems does industry knowledge reveal? (Vigil)"""
-    
-    if not XAI_API_KEY or XAI_API_KEY == 'your_xai_api_key':
-        return []
-    
-    problems_found = []
-    
-    for ps_problem in private_source_problems:
-        
-        prompt = f"""
-Given this supply chain problem identified from company data:
-Problem Type: {ps_problem['type']}
-Problem: {ps_problem['problem']}
-
-From industry knowledge, explain:
-1. Why this problem is critical
-2. What external factors make it worse
-3. What industry benchmarks say about this risk
-4. Real-world impact (examples from industry)
-
-Be specific about current geopolitical/market context.
-
-Format as JSON with keys: why_critical, external_factors, industry_benchmark, real_world_impact
-"""
-        
-        try:
-            response = call_xai_api(prompt, system_content="You are risk assessment expert. Respond ONLY with valid JSON.")
-            
-            if response:
-                problems_found.append({
-                    'type': ps_problem['type'],
-                    'problem': response.get('why_critical', ps_problem['problem']),
-                    'source': 'Vigil',
-                    'evidence': response.get('external_factors', []),
-                    'severity': ps_problem['severity'],
-                    'confidence': 0.85,
-                    'context': response
-                })
-        except:
-            pass
-    
-    return problems_found
-
-
-def synthesize_problems(private_source: List[Dict], vigil: List[Dict]) -> List[Dict]:
-    """Merge problems from both sources with attribution"""
-    
-    synthesized = []
-    used_vigil = set()
-    
-    for ps_problem in private_source:
-        matching_vigil = None
-        for i, v_problem in enumerate(vigil):
-            if ps_problem['type'] == v_problem['type']:
-                matching_vigil = v_problem
-                used_vigil.add(i)
-                break
-        
-        if matching_vigil:
-            synthesized.append({
-                'type': ps_problem['type'],
-                'synthesized_statement': (
-                    f"{ps_problem['problem']} (Private Source: {ps_problem['evidence'][0]}) - "
-                    f"{matching_vigil['problem']} (Vigil: {matching_vigil['evidence'][0] if matching_vigil['evidence'] else 'industry analysis'})"
-                ),
-                'sources': ['Private Source', 'Vigil'],
-                'consensus': 'HIGH',
-                'confidence': 0.93,
-                'severity': ps_problem['severity'],
-                'private_source': ps_problem,
-                'vigil': matching_vigil
-            })
-        else:
-            synthesized.append({
-                'type': ps_problem['type'],
-                'synthesized_statement': ps_problem['problem'],
-                'sources': ['Private Source'],
-                'consensus': 'UNIQUE',
-                'confidence': ps_problem['confidence'],
-                'severity': ps_problem['severity'],
-                'private_source': ps_problem
-            })
-    
-    return synthesized
-
-
-# ═══════════════════════════════════════════════════════════════
-# ALERT GENERATION & SYNTHESIS
-# ═══════════════════════════════════════════════════════════════
-
-def generate_dual_source_alerts(company_data: Dict) -> List[Dict]:
-    """Generate alerts from both Private Source and Vigil"""
-    
-    alerts = []
-    
-    # Private Source: Rule violations
-    private_alerts = []
-    
-    for supplier in company_data.get('suppliers', []):
-        if supplier.get('concentration', 0) > 0.15:
-            private_alerts.append({
-                'type': 'CONCENTRATION_VIOLATION',
-                'severity': 'CRITICAL',
-                'source': 'Private Source',
-                'data': {
-                    'supplier': supplier['name'],
-                    'concentration': supplier['concentration'],
-                    'policy_limit': 0.15,
-                    'violation': supplier['concentration'] - 0.15
-                },
-                'message': f"{supplier['name']} concentration {supplier['concentration']:.0%} exceeds policy 15%"
-            })
-    
-    # Vigil: Risk context for each private alert
-    for alert in private_alerts:
-        vigil_context = query_grok_for_alert_context(alert, company_data)
-        
-        synthesized_alert = {
-            'alert_id': str(uuid.uuid4()),
-            'type': alert['type'],
-            'severity': max(alert['severity'], vigil_context.get('severity', 'HIGH')),
-            'urgency': calculate_urgency(alert, vigil_context),
-            'synthesis': {
-                'statement': f"{alert['message']} (Private Source) - {vigil_context.get('why_it_matters', '')} (Vigil)",
-                'sources': ['Private Source', 'Vigil'],
-                'consensus': 'HIGH',
-                'confidence': 0.95
-            },
-            'private_source': alert,
-            'vigil': vigil_context,
-            'recommended_actions': get_recommended_actions(alert, vigil_context),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'ACTIVE'
-        }
-        
-        alerts.append(synthesized_alert)
-    
-    return alerts
-
-
-def query_grok_for_alert_context(alert: Dict, company_data: Dict) -> Dict:
-    """Get Vigil context for alert"""
-    
-    if not XAI_API_KEY or XAI_API_KEY == 'your_xai_api_key':
-        return {'why_it_matters': 'Context unavailable', 'severity': 'HIGH'}
-    
-    prompt = f"""
-Alert: {alert['message']}
-Company context: Supply chain with {len(company_data.get('suppliers', []))} suppliers across multiple regions.
-
-Explain concisely:
-1. Why this matters (from industry perspective)
-2. Current geopolitical/market factors making it worse
-3. Severity assessment
-
-JSON format: {{why_it_matters: "...", external_factors: [...], severity: "HIGH"}}
-"""
-    
-    try:
-        response = call_xai_api(prompt, system_content="You are risk expert. Respond ONLY with JSON.")
-        return response if response else {'why_it_matters': alert['message'], 'severity': 'HIGH'}
-    except:
-        return {'why_it_matters': alert['message'], 'severity': 'HIGH'}
-
-
-def calculate_urgency(private_alert: Dict, vigil_context: Dict) -> str:
-    """Calculate urgency based on severity + consensus"""
-    
-    if private_alert['severity'] == 'CRITICAL' and vigil_context.get('severity') == 'CRITICAL':
-        return 'IMMEDIATE'
-    elif private_alert['severity'] == 'CRITICAL':
-        return 'URGENT'
-    else:
-        return 'IMPORTANT'
-
-
-def get_recommended_actions(private_alert: Dict, vigil_context: Dict) -> List[Dict]:
-    """Get recommended actions for alert"""
-    
-    return [
-        {
-            'timeframe': 'Immediate',
-            'action': 'Review and confirm alert details',
-            'owner': 'VP Operations'
-        },
-        {
-            'timeframe': 'Today',
-            'action': 'Activate mitigation protocol',
-            'owner': 'VP Operations'
-        },
-        {
-            'timeframe': 'This Week',
-            'action': 'Implement diversification strategy',
-            'owner': 'Procurement'
-        }
-    ]
-
-
-# ═══════════════════════════════════════════════════════════════
-# FORMAT DETECTION & RESPONSE FORMATTING
-# ═══════════════════════════════════════════════════════════════
-
-def detect_question_format(user_message: str) -> str:
-    """Detect question type to determine response format"""
-    
-    if not XAI_API_KEY or XAI_API_KEY == 'your_xai_api_key':
-        # Fallback detection
-        message_lower = user_message.lower()
-        
-        if any(word in message_lower for word in ['pattern', 'trend', 'accelerat']):
-            return 'PATTERN_DETECTION'
-        elif any(word in message_lower for word in ['should', 'action', 'do we', 'fix']):
-            return 'ACTION_PLAN'
-        elif any(word in message_lower for word in ['compare', 'versus', 'difference']):
-            return 'COMPARISON'
-        else:
-            return 'GENERAL_ANALYSIS'
-    
-    try:
-        response = call_xai_api(
-            FORMAT_DETECTION_PROMPT.format(question=user_message),
-            system_content="You are a question classifier. Respond with ONLY the format type name."
-        )
-        
-        if isinstance(response, str):
-            return response.strip().upper()
-        return 'GENERAL_ANALYSIS'
-    except:
-        return 'GENERAL_ANALYSIS'
-
-
-# ═══════════════════════════════════════════════════════════════
-# X.AI API INTEGRATION
-# ═══════════════════════════════════════════════════════════════
-
-def call_xai_api(
-    user_content: str,
-    system_content: str = SYNTHESIS_SYSTEM_PROMPT,
-    temperature: float = 0.3,
-    max_tokens: int = 1500
-) -> Optional[Dict]:
-    """Call X.AI Grok API with proper error handling"""
-    
-    if not XAI_API_KEY or XAI_API_KEY == 'your_xai_api_key':
-        return None
-    
-    try:
-        headers = {
-            'Authorization': f'Bearer {XAI_API_KEY}',
-            'Content-Type': 'application/json'
-        }
-        
-        payload = {
-            'model': 'grok-2',
-            'messages': [
-                {'role': 'system', 'content': system_content},
-                {'role': 'user', 'content': user_content}
-            ],
-            'temperature': temperature,
-            'max_tokens': max_tokens
-        }
-        
-        response = requests.post(XAI_API_URL, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        content = data['choices'][0]['message']['content']
-        
-        # Try to parse as JSON if user_content asks for it
-        try:
-            return json.loads(content)
-        except:
-            return content
-    
-    except Exception as e:
-        print(f"X.AI API error: {e}")
-        return None
-
-
-def get_xai_analysis_formal(
-    user_message: str,
-    context: str,
-    format_type: str = 'GENERAL_ANALYSIS'
-) -> str:
-    """Get formal X.AI analysis with appropriate format"""
-    
-    system_prompt = SYNTHESIS_SYSTEM_PROMPT + f"\n\nRESPONSE FORMAT: {format_type}"
-    
-    response = call_xai_api(
-        user_content=context,
-        system_content=system_prompt,
-        temperature=0.3,
-        max_tokens=2000
-    )
-    
-    if isinstance(response, str):
-        return response
-    
-    return str(response)
-
-
-# ═══════════════════════════════════════════════════════════════
-# SUPABASE OPERATIONS
-# ═══════════════════════════════════════════════════════════════
-
-def search_supabase_risks(embedding_vector: List[float], top_k: int = 5) -> List[Dict]:
-    """Search Supabase for similar risks using pgvector"""
-    
-    try:
-        response = supabase.rpc(
-            'match_risks',
-            {
-                'query_embedding': embedding_vector,
-                'match_threshold': 0.7,
-                'match_count': top_k
-            }
-        ).execute()
-        
-        return response.data if response.data else []
-    except Exception as e:
-        print(f"Supabase search error: {e}")
-        return []
-
-
-def store_risk_in_supabase(description: str, embedding: List[float], metadata: Dict = None) -> bool:
-    """Store risk and embedding in Supabase"""
-    
-    try:
-        data = {
-            'description': description,
-            'embedding': embedding,
-            'metadata': metadata or {},
-            'created_at': datetime.now().isoformat()
-        }
-        
-        supabase.table('risks').insert(data).execute()
-        return True
-    except Exception as e:
-        print(f"Supabase store error: {e}")
-        return False
-
-
-def get_company_overview() -> Dict:
-    """Get company data for analysis"""
-    
-    # This would normally come from your database
-    # Using synthetic data for now
-    return {
-        'suppliers': [
-            {'name': 'Taiwan TSMC', 'concentration': 0.26, 'region': 'Taiwan', 'critical': True},
-            {'name': 'Mexico Assembly', 'concentration': 0.18, 'region': 'Mexico', 'critical': False},
-            {'name': 'Malaysia Electronics', 'concentration': 0.22, 'region': 'Malaysia', 'critical': False}
-        ],
-        'incident_frequency': 2.3,
-        'incidents_2024': 5,
-        'incidents_2023': 1.6,
-        'total_suppliers': 340,
-        'regions': 18,
-        'policies': {
-            'concentration_limit': 0.15,
-            'frequency_limit': 1.6,
-            'financial_impact_limit': 2000000
-        }
-    }
-
-
-# ═══════════════════════════════════════════════════════════════
+# =========================================================================
 # API ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
+# =========================================================================
 
 @app.route('/api/health', methods=['GET'])
-def health():
-    """Health check endpoint"""
+def health_check():
+    """Health check endpoint for monitoring"""
     return jsonify({
-        'status': 'running',
-        'model_loaded': MODEL_LOADED,
+        'status': 'healthy' if (MODEL_LOADED and SUPABASE_CONNECTED) else 'degraded',
+        'transformer_loaded': MODEL_LOADED,
         'supabase_connected': SUPABASE_CONNECTED,
-        'xai_configured': bool(XAI_API_KEY and XAI_API_KEY != 'your_xai_api_key'),
+        'message': 'VIGIL system operational',
         'timestamp': datetime.now().isoformat()
     }), 200
 
+@app.route('/api/risks/analyze', methods=['POST'])
+def analyze_risk():
+    """
+    Analyze risk with full interconnected analysis
+    
+    Request:
+    {
+        "description": "Risk description (20+ characters)"
+    }
+    
+    Returns complete analysis including:
+    - Classification (risk type, severity)
+    - Historical context
+    - Cascading effects
+    - Industry intelligence
+    """
+    
+    if not MODEL_LOADED:
+        logger.error("Transformer not loaded")
+        return jsonify({
+            'success': False,
+            'error': 'Transformer not loaded'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No JSON body provided'
+            }), 400
+        
+        # Accept both 'description' and 'message' fields
+        description = data.get('description') or data.get('message', '').strip()
+        
+        if not description:
+            return jsonify({
+                'success': False,
+                'error': 'Description or message required'
+            }), 400
+        
+        if len(description) < 20:
+            return jsonify({
+                'success': False,
+                'error': 'Description must be at least 20 characters'
+            }), 400
+        
+        if len(description) > 5000:
+            return jsonify({
+                'success': False,
+                'error': 'Description must be less than 5000 characters'
+            }), 400
+        
+        # Forward pass with interconnected analysis
+        logger.info(f"Analyzing risk: {description[:50]}...")
+        
+        with torch.no_grad():
+            output = transformer.forward(
+                data=description,
+                analyze_interconnections=True
+            )
+        
+        if not output.get('success'):
+            logger.error(f"Analysis failed: {output.get('error')}")
+            return jsonify({
+                'success': False,
+                'error': output.get('error', 'Analysis failed')
+            }), 400
+        
+        # Extract key fields
+        analysis = output.get('analysis', {})
+        
+        # Generate narrative
+        output_with_description = output.copy()
+        output_with_description['description'] = description
+        narrative = transformer.generate_narrative(output_with_description)
+        
+        # Format interconnected analysis
+        formatted_analysis = format_interconnected_analysis(analysis)
+        
+        logger.info(f"Analysis successful - Risk type: {output.get('risk_type')}, "
+                   f"Severity: {output.get('severity')}")
+        
+        return jsonify({
+            'success': True,
+            'classification': {
+                'risk_type': output.get('risk_type'),
+                'severity': output.get('severity'),
+                'confidence': float(output.get('confidence', 0))
+            },
+            'narrative': narrative,
+            'formatted_analysis': formatted_analysis,
+            'detailed_analysis': {
+                'self_conflicts': analysis.get('self_conflicts'),
+                'historical_matches': analysis.get('historical_matches'),
+                'recurring_patterns': analysis.get('recurring_patterns'),
+                'cascading_effects': analysis.get('cascading_effects'),
+                'timeline_correlations': analysis.get('timeline_correlations'),
+                'grok_intelligence': analysis.get('grok_intelligence')
+            },
+            'doc_id': output.get('doc_id')
+        }), 201
+        
+    except torch.cuda.OutOfMemoryError:
+        logger.error("GPU out of memory")
+        return jsonify({
+            'success': False,
+            'error': 'System memory exceeded'
+        }), 503
+    except Exception as e:
+        logger.error(f"Analysis error: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'Analysis error: {str(e)}'
+        }), 500
 
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    """Main chat endpoint with dual-source synthesis"""
+@app.route('/api/risks/search', methods=['GET'])
+def search_risks():
+    """
+    Semantic search across all risks
+    
+    Query params:
+    - q: search query (required)
+    - top_k: number of results (default: 5, max: 20)
+    """
     
     if not MODEL_LOADED:
         return jsonify({
-            'error': 'Model not loaded',
-            'response': 'System initializing. Please try again.'
+            'success': False,
+            'error': 'Transformer not loaded'
         }), 503
     
-    data = request.get_json()
-    user_message = data.get('message', '').strip()
-    
-    if not user_message or len(user_message) < 20:
-        return jsonify({
-            'error': 'invalid_input',
-            'response': 'Please provide a detailed risk query (minimum 20 characters).'
-        }), 400
-    
     try:
-        # STEP 1: Embedding
-        with torch.no_grad():
-            results = model.encode_data(
-                data=user_message,
-                convert_to_numpy=True,
-                store_vectors=True,
-                check_alerts=True
-            )
+        query = request.args.get('q', '').strip()
+        top_k = request.args.get('top_k', default=5, type=int)
         
-        embedding_vector = results.get('embeddings', [None])[0]
-        if embedding_vector is not None:
-            embedding_vector = embedding_vector.tolist()
+        # Validate parameters
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Query parameter required'
+            }), 400
         
-        alerts = results.get('alerts', [])
+        if len(query) < 5:
+            return jsonify({
+                'success': False,
+                'error': 'Query must be at least 5 characters'
+            }), 400
         
-        # STEP 2: Search Supabase
-        similar_incidents = []
-        if SUPABASE_CONNECTED and embedding_vector:
-            similar_incidents = search_supabase_risks(embedding_vector, top_k=10)
+        if top_k < 1 or top_k > 20:
+            top_k = min(max(top_k, 1), 20)
         
-        # STEP 3: Detect question format
-        question_format = detect_question_format(user_message)
+        logger.info(f"Searching for: {query} (top_k={top_k})")
         
-        # STEP 4: Dual-source problem detection
-        company_data = get_company_overview()
-        problems = detect_problems_dual_source(
-            user_message=user_message,
-            embedding_vector=embedding_vector or [],
-            similar_incidents=similar_incidents,
-            company_data=company_data
-        )
+        results = transformer.semantic_search(query, top_k=top_k)
         
-        # STEP 5: Build context
-        context = build_synthesis_context(
-            user_message=user_message,
-            problems=problems,
-            similar_incidents=similar_incidents
-        )
-        
-        # STEP 6: Get X.AI analysis
-        xai_response = get_xai_analysis_formal(
-            user_message=user_message,
-            context=context,
-            format_type=question_format
-        )
-        
-        # STEP 7: Store in conversation history
-        conversation_history.append({
-            'role': 'user',
-            'content': user_message,
-            'timestamp': datetime.now().isoformat(),
-            'format_detected': question_format
-        })
-        
-        conversation_history.append({
-            'role': 'assistant',
-            'content': xai_response,
-            'timestamp': datetime.now().isoformat(),
-            'problems_identified': len(problems['synthesized_problems']),
-            'sources_used': ['Private Source', 'Vigil'],
-            'consensus_problems': len(problems['consensus_problems'])
-        })
-        
-        # STEP 8: Generate and store alerts
-        new_alerts = generate_dual_source_alerts(company_data)
-        alerts_database.extend(new_alerts)
+        logger.info(f"Found {len(results)} results")
         
         return jsonify({
-            'response': xai_response,
-            'metadata': {
-                'format_detected': question_format,
-                'problems_identified': len(problems['synthesized_problems']),
-                'consensus_problems': len(problems['consensus_problems']),
-                'similar_incidents': len(similar_incidents),
-                'alerts_generated': len(new_alerts),
-                'sources': ['Private Source', 'Vigil']
-            },
-            'status': 'success'
+            'success': True,
+            'query': query,
+            'results': results,
+            'count': len(results)
         }), 200
-    
+        
     except Exception as e:
-        print(f"Chat error: {e}")
+        logger.error(f"Search error: {str(e)}", exc_info=True)
         return jsonify({
-            'error': 'Processing failed',
-            'response': 'An error occurred. Please try again.',
-            'status': 'error'
+            'success': False,
+            'error': str(e)
         }), 500
 
-
-@app.route('/api/alerts', methods=['GET'])
-def get_alerts():
-    """Get all active alerts"""
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """Get vector store statistics"""
     
-    active_alerts = [a for a in alerts_database if a['status'] == 'ACTIVE']
+    if not MODEL_LOADED:
+        return jsonify({
+            'success': False,
+            'error': 'Transformer not loaded'
+        }), 503
     
-    return jsonify({
-        'alerts': active_alerts,
-        'total_active': len(active_alerts),
-        'by_severity': {
-            'CRITICAL': len([a for a in active_alerts if a['severity'] == 'CRITICAL']),
-            'HIGH': len([a for a in active_alerts if a['severity'] == 'HIGH']),
-            'MEDIUM': len([a for a in active_alerts if a['severity'] == 'MEDIUM'])
-        },
-        'consensus_alerts': len([a for a in active_alerts if a['synthesis']['consensus'] == 'HIGH']),
-        'status': 'success'
-    }), 200
+    try:
+        stats = transformer.get_vector_store_stats()
+        
+        return jsonify({
+            'success': True,
+            'statistics': stats,
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Stats error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """
+    Chat endpoint - routes to analyze_risk
+    Accepts: {"message": "..."}
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'message' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Message required'
+            }), 400
+        
+        # Route to analyze endpoint with 'message' field
+        request.data = json.dumps({
+            'description': data['message']
+        }).encode()
+        
+        return analyze_risk()
+        
+    except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-@app.route('/api/alerts/<alert_id>', methods=['GET'])
-def get_alert_details(alert_id: str):
-    """Get full alert details with synthesis"""
-    
-    alert = next((a for a in alerts_database if a['alert_id'] == alert_id), None)
-    
-    if not alert:
-        return jsonify({'error': 'Alert not found'}), 404
-    
-    return jsonify({
-        'alert': alert,
-        'status': 'success'
-    }), 200
-
-
-@app.route('/api/history', methods=['GET'])
-def get_history():
-    """Get conversation history"""
-    
-    return jsonify({
-        'history': conversation_history,
-        'total_messages': len(conversation_history),
-        'timestamp': datetime.now().isoformat()
-    }), 200
-
-
-@app.route('/api/clear-history', methods=['POST'])
-def clear_history():
-    """Clear conversation history"""
-    
-    global conversation_history
-    conversation_history = []
-    
-    return jsonify({
-        'status': 'success',
-        'message': 'Conversation history cleared'
-    }), 200
-
-
-def build_synthesis_context(user_message: str, problems: Dict, similar_incidents: List[Dict]) -> str:
-    """Build context for Grok with dual-source attribution"""
-    
-    context = f"""
-═════════════════════════════════════════════════════════════════
-USER QUERY:
-{user_message}
-
-═════════════════════════════════════════════════════════════════
-PROBLEMS IDENTIFIED (Dual-Source Synthesis):
-
-"""
-    
-    for problem in problems['synthesized_problems']:
-        if problem.get('sources') and len(problem['sources']) > 1:
-            context += f"""
-Problem: {problem['type']}
-Synthesis: {problem['synthesized_statement']}
-Sources: {' + '.join(f"({s})" for s in problem['sources'])}
-Consensus: {problem.get('consensus', 'MEDIUM')}
-Confidence: {problem.get('confidence', 0.8):.0%}
-
-"""
-        else:
-            context += f"""
-Problem: {problem['type']}
-Identified by: {', '.join(f"({s})" for s in problem.get('sources', ['Unknown']))}
-Statement: {problem.get('synthesized_statement', problem.get('problem', ''))}
-Confidence: {problem.get('confidence', 0.8):.0%}
-
-"""
-    
-    if similar_incidents:
-        context += f"""
-═════════════════════════════════════════════════════════════════
-SIMILAR HISTORICAL INCIDENTS (Private Source):
-
-"""
-        for i, incident in enumerate(similar_incidents[:5], 1):
-            context += f"{i}. {incident.get('description', 'N/A')}\n"
-    
-    context += f"""
-═════════════════════════════════════════════════════════════════
-PROVIDE COMPREHENSIVE ANALYSIS:
-1. Answer explicit question
-2. Explain inferred problems
-3. Show sources: (Private Source) and (Vigil)
-4. Recommend solutions
-5. Show confidence levels
-═════════════════════════════════════════════════════════════════
-"""
-    
-    return context
-
+# =========================================================================
+# MAIN
+# =========================================================================
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    if FLASK_ENV == 'production':
+        logger.warning("Running in PRODUCTION mode - use Gunicorn!")
+        logger.warning("Recommended: gunicorn --workers=4 --bind=0.0.0.0:5000 app:app")
+        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    else:
+        app.run(host='0.0.0.0', port=5000, debug=True)
