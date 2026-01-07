@@ -276,6 +276,23 @@ def format_interconnected_analysis(analysis):
 # API ENDPOINTS
 # =========================================================================
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint - returns welcome message"""
+    return jsonify({
+        'success': True,
+        'message': 'VIGIL Risk Intelligence Platform',
+        'version': '2.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'analyze': '/api/risks/analyze',
+            'search': '/api/risks/search',
+            'stats': '/api/stats',
+            'chat': '/api/chat'
+        }
+    })
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring"""
