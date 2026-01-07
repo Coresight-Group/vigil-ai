@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+// Dynamically set API base URL based on environment
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000/api'
+  : `${window.location.protocol}//${window.location.host}/api`;
 
 const messages = document.getElementById('messages');
 const input = document.getElementById('input');
@@ -77,7 +80,10 @@ async function sendMessage() {
     const message = input.value.trim();
 
     if (!message) return;
-    if (message.length < 20) return;
+    if (message.length < 20) {
+        addMessage('Please enter at least 20 characters', 'assistant');
+        return;
+    }
     if (isLoading) return;
 
     addMessage(message, 'user');

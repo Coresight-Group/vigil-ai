@@ -3,7 +3,7 @@ VIGIL Flask Application - Risk Management API
 Serves interconnected risk analysis with dual-source synthesis
 """
 
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 import torch
 import os
@@ -278,20 +278,42 @@ def format_interconnected_analysis(analysis):
 
 @app.route('/', methods=['GET'])
 def root():
-    """Root endpoint - returns welcome message"""
-    return jsonify({
-        'success': True,
-        'message': 'VIGIL Risk Intelligence Platform',
-        'version': '2.0',
-        'status': 'running',
-        'endpoints': {
-            'health': '/api/health',
-            'analyze': '/api/risks/analyze',
-            'search': '/api/risks/search',
-            'stats': '/api/stats',
-            'chat': '/api/chat'
-        }
-    })
+    """Serve index.html"""
+    try:
+        with open('index.html', 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        return jsonify({
+            'success': True,
+            'message': 'VIGIL Risk Intelligence Platform',
+            'version': '2.0',
+            'status': 'running',
+            'endpoints': {
+                'health': '/api/health',
+                'analyze': '/api/risks/analyze',
+                'search': '/api/risks/search',
+                'stats': '/api/stats',
+                'chat': '/api/chat'
+            }
+        })
+
+@app.route('/styles.css', methods=['GET'])
+def serve_css():
+    """Serve styles.css"""
+    try:
+        with open('styles.css', 'r') as f:
+            return f.read(), 200, {'Content-Type': 'text/css'}
+    except FileNotFoundError:
+        return 'Not found', 404
+
+@app.route('/script.js', methods=['GET'])
+def serve_js():
+    """Serve script.js"""
+    try:
+        with open('script.js', 'r') as f:
+            return f.read(), 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError:
+        return 'Not found', 404
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
