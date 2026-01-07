@@ -1,8 +1,8 @@
 ---
 title: VIGIL Risk Intelligence
 emoji: 🛡️
-colorFrom: black
-colorTo: gold
+colorFrom: yellow
+colorTo: gray
 sdk: docker
 app_file: app.py
 app_port: 5000
