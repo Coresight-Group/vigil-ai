@@ -69,11 +69,10 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# CORS configuration - FIXED for production
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+# CORS configuration - Allow all origins for HF Spaces
 CORS(app, resources={
     r"/api/*": {
-        "origins": ALLOWED_ORIGINS,
+        "origins": "*",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
@@ -281,7 +280,8 @@ def root():
     """Serve index.html"""
     try:
         with open('index.html', 'r') as f:
-            return f.read()
+            html_content = f.read()
+            return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
     except FileNotFoundError:
         return jsonify({
             'success': True,
@@ -302,7 +302,8 @@ def serve_css():
     """Serve styles.css"""
     try:
         with open('styles.css', 'r') as f:
-            return f.read(), 200, {'Content-Type': 'text/css'}
+            css_content = f.read()
+            return css_content, 200, {'Content-Type': 'text/css; charset=utf-8'}
     except FileNotFoundError:
         return 'Not found', 404
 
@@ -311,7 +312,8 @@ def serve_js():
     """Serve script.js"""
     try:
         with open('script.js', 'r') as f:
-            return f.read(), 200, {'Content-Type': 'application/javascript'}
+            js_content = f.read()
+            return js_content, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
     except FileNotFoundError:
         return 'Not found', 404
 
