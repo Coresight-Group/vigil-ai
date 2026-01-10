@@ -1,7 +1,7 @@
----
+ ---
 title: VIGIL Risk Intelligence
-emoji: 🛡️
-colorFrom: yellow
+emoji: ⚠️
+colorFrom: gray
 colorTo: gray
 sdk: docker
 app_file: app.py
@@ -12,20 +12,26 @@ library_name: transformers
 pipeline_tag: text-classification
 tags:
   - risk-management
-  - text-classification
   - risk-detection
   - security
   - machine-learning
   - enterprise
   - dual-source
-  - synthesis
-  - bert
+  - schema-on-read
+  - schema-on-write
+  - structured-data
+  - unstructured-data
+  - semi-structured-data
+  - vigil-summary
+  - alerts
+  - solutions
+  - claude-ai
+  - anthropic
+  - grok
+  - agentic-rag
   - distilbert
-  - nlp
   - semantic-search
   - vector-database
-  - real-time-alerts
-  - grok
   - supabase
   - pgvector
   - flask
@@ -33,239 +39,485 @@ tags:
   - transformers
 ---
 
-# VIGIL: Enterprise Risk Intelligence System
+# ⚠️ VIGIL: Enterprise Risk Intelligence System
 
 ## Executive Summary
 
-VIGIL is an enterprise-grade risk intelligence platform that transforms how companies detect and respond to business threats. Unlike traditional risk management systems that rely on a single perspective, VIGIL combines two powerful data sources: your company's proprietary historical data and real-time industry knowledge from X.AI's Grok AI. By synthesizing these perspectives with complete attribution and transparency, VIGIL provides risk analysis that is both rooted in your company's proven experience and informed by broader industry patterns.
+VIGIL is an enterprise-grade risk intelligence platform that transforms how companies detect and respond to business threats. Unlike traditional risk management systems, VIGIL combines three distinct data processing paths with their own schema strategies:
 
-The system operates by taking natural language queries from business leaders and analyzing them through a dual-path architecture. Your company's private data source provides historical context, proven solutions, and governance rule validation stored in Supabase with pgvector semantic search. Simultaneously, Grok AI provides market analysis, emerging threats, and best practice benchmarking with real-time global knowledge. These findings are merged in a synthesis engine that calculates consensus scores, detects the type of question being asked, and formats responses accordingly. The result is actionable intelligence with clear attribution showing exactly where each finding originated.
+1. **Structured Data (Schema on Write)** - PostgreSQL/Supabase database with strict schema validation
+2. **Semi-Structured Data (Hybrid Schema)** - JSONB fields with flexible metadata and validation at boundaries
+3. **Unstructured Data (Schema on Read)** - Natural language processing with graceful validation
 
-VIGIL achieves detection confidence of 95 percent or higher when both sources agree on a risk, and solutions are ranked by their proven effectiveness based on track record. The system responds in under 500 milliseconds per query, uses advanced 768-dimensional semantic embeddings from DistilBERT for accuracy, and stores historical data in Supabase with pgvector support for semantic similarity search. Every recommendation includes confidence levels, evidence from both sources, and implementation guidance. The system includes intelligent alert generation with configurable escalation, format detection for different question types, and comprehensive governance rule checking.
+All three data types flow through a unified **DistilBERT embedding layer** (768-dimensional vectors) that converts them into a common semantic space. Then:
+- **Claude AI (Anthropic)** provides deep reasoning, synthesis, and Vigil Summary generation
+- **Grok Intelligence (X.AI)** acts as an Agentic RAG engine, processing first-party data for industry knowledge and context
 
----
-
-## 🎯 Overview
-
-VIGIL is a **dual-path risk management transformer** that integrates:
-
-### Path 1: Structured Data Analysis
-- PostgreSQL/Supabase for historical risk data
-- Vector embeddings with DistilBERT (768-dimensional)
-- Semantic similarity search with pgvector
-- Structured risk metadata in JSONB format
-- Historical pattern matching and correlation analysis
-
-### Path 2: Unstructured Intelligence
-- Real-time industry intelligence from Grok AI (X.AI)
-- Current market context and situational awareness
-- Similar incident research from recent history (last 2 years)
-- Industry consensus on risk severity assessment
-- Validation and context confirmation from live data
-
-### Interconnected Analysis Engine
-Combines both paths to detect:
-- **Self-Conflicts:** Contradictions within risk descriptions
-- **Historical Precedents:** Similar past incidents with similarity scores (0-100%)
-- **Recurring Patterns:** Patterns in specific risk categories
-- **Cascading Effects:** How this risk affects other systems and operations
-- **Timeline Correlations:** Related risks occurring in same time period
-- **Industry Validation:** External market context verification and cross-checking
+The system achieves 95%+ confidence when both paths agree, with complete attribution and transparency throughout.
 
 ---
 
-## ✨ Core Features
+## 🏗️ Architecture Overview
 
-### 1. Intelligent Risk Classification
-- **Risk Type Detection:** Product Risk, Service Risk, Brand Risk, Supply Chain, Quality Control
-- **Severity Assessment:** Low, Medium, High, Critical
-- **Confidence Scoring:** 0-100% confidence in assessment
-- **Dynamic Adjustment:** Severity automatically adjusted based on Grok intelligence findings
+### Three Data Processing Paths
 
-### 2. Comprehensive Interconnected Risk Analysis
+#### **Path 1: Structured Data (Schema on Write)**
 
-**Self-Conflict Detection**
-- Identifies contradictory statements within risk description
-- Flags statements like "recovered" vs "still failing"
-- Detects inconsistent impact claims
+**Data Characteristics:**
+- Fixed schema in PostgreSQL/Supabase
+- Strict validation at write time
+- High consistency and reliability
+- Examples: Risk records, alerts, solutions, audit logs
 
-**Historical Precedent Analysis**
-- Finds up to 5 most similar past incidents from company history
-- Similarity score for each match (0-100%)
-- Original severity level and occurrence date
-- Timeline comparison
+**Schema Definition:**
+```sql
+risks (
+  id UUID PRIMARY KEY,
+  organization_id UUID,
+  description VARCHAR(5000) NOT NULL,
+  risk_type VARCHAR(50),
+  severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'),
+  complexity_score INTEGER (1-10),
+  confidence DECIMAL (0-1),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+)
 
-**Pattern Recognition**
-- Identifies recurring patterns in specific risk categories
-- Frequency analysis across risk types
-- Severity distribution in category
-- Trend identification
+risk_metadata JSONB (
+  source: string,
+  category_hint: string,
+  tags: array,
+  custom_fields: object
+)
+```
 
-**Cascading Effect Mapping**
-- Shows which systems/operations will be affected
-- Lists affected risk types and current severity
-- Cascade probability estimation (0-100%)
-- Secondary risk severity impacts
+**Processing Flow:**
+1. Input validation (Schema on Write) - REJECT if invalid
+2. Store in PostgreSQL with validation
+3. DistilBERT vectorization (768-dim)
+4. pgvector storage and indexing
+5. Structured analysis (pattern matching, correlations)
+6. Output: Verified historical data, proven solutions
 
-**Timeline Correlation**
-- Groups simultaneously occurring risks
-- Related events count in time window
-- Configurable time window (default: 14 days)
-- Correlation strength scoring (0-100%)
-
-**Industry Intelligence Integration**
-- Real-time context search via Grok AI
-- Severity validation against industry standards
-- Recent similar incidents (last 2 years)
-- Resolution methods and outcomes
-- Confidence scoring for findings
-
-### 3. Semantic Search
-- Vector-based similarity search across all stored risks
-- Find related risks by semantic meaning (not just keywords)
-- Configurable results (top-1 to top-20)
-- Returns similarity scores and full metadata
-
-### 4. Document Management
-- Store risk descriptions with comprehensive metadata
-- Tag with data source (API, attachment, email, etc.)
-- Timestamp all submissions with UTC timestamps
-- Track document relationships and references
-- Retrieve documents by ID with full history
+**Components:**
+- SchemaValidator - Database schema enforcement
+- DocumentStore - Persistent storage
+- Vector Indexing - pgvector semantic search
+- RiskCorrelationEngine - Pattern detection
 
 ---
 
-## 🏗️ Architecture
+#### **Path 2: Semi-Structured Data (Hybrid Schema)**
 
-### System Components
+**Data Characteristics:**
+- Flexible structure with core required fields
+- Validation at read/write boundaries
+- JSONB storage for extensibility
+- Examples: Risk metadata, classifications, custom attributes
 
-1. **DualPathRiskTransformer** - Main transformer combining both analysis paths
-   - DistilBERT embedding generation
-   - Multi-class risk classification
-   - Interconnected analysis orchestration
-   - Narrative generation
+**Schema Definition:**
+```json
+{
+  "id": "uuid",
+  "risk_type": "SUPPLY_CHAIN|QUALITY|DELIVERY|PRODUCTION|BRAND",
+  "severity": "LOW|MEDIUM|HIGH|CRITICAL",
+  "attributes": {
+    "personnel_impact": "string (optional)",
+    "financial_impact": "number (optional)",
+    "timeline": "string (optional)",
+    "custom_field_1": "any (optional)"
+  },
+  "classifications": {
+    "industry": "string",
+    "business_unit": "string",
+    "priority_level": "integer"
+  }
+}
+```
 
-2. **GrokIntelligenceEngine** - Web intelligence and validation
-   - Real-time market research
-   - Severity validation against industry standards
-   - Similar incident discovery
-   - Current context synthesis
+**Processing Flow:**
+1. Flexible input (Core fields required, extras optional)
+2. Store with required fields in structured columns
+3. Optional/custom fields in JSONB
+4. DistilBERT vectorization (768-dim)
+5. Dual processing:
+   - Structured fields → Database queries
+   - JSONB fields → Semantic search via vectors
+6. Hybrid analysis (both structured & semantic)
+7. Output: Complete picture with flexibility
 
-3. **RiskCorrelationEngine** - Pattern and correlation detection
-   - Self-conflict identification
-   - Historical pattern matching
-   - Cascading effect analysis
-   - Timeline correlation analysis
-
-4. **SchemaValidator** - Input validation and error handling
-   - Description length validation (20-5000 chars)
-   - Data type checking
-   - Required field validation
-   - Error reporting
-
-5. **DocumentStore** - Risk document management
-   - In-memory document storage
-   - Metadata association
-   - ID generation and tracking
-   - Document retrieval
-
-### Technology Stack
-
-| Component | Technology | Details |
-|-----------|-----------|---------|
-| Language | Python 3.8+ | Modern async capable |
-| ML Framework | PyTorch | GPU/CPU support |
-| Embeddings | DistilBERT | 768-dim vectors, fast inference |
-| Backend | Flask | Lightweight REST API |
-| Database | PostgreSQL | pgvector extension for vectors |
-| Vector Search | pgvector | Optimized similarity search |
-| External AI | Grok (X.AI) | Real-time intelligence |
-| Deployment | Docker | Container orchestration |
-| Cloud | Hugging Face Spaces | Serverless deployment |
+**Components:**
+- FlexibleValidator - Hybrid validation
+- JSONB Storage - PostgreSQL JSON support
+- Vector Embeddings - All data types vectorized
+- Hybrid QueryEngine - Structured + semantic queries
 
 ---
 
-## 📊 Data Flow
+#### **Path 3: Unstructured Data (Schema on Read)**
 
-### Risk Analysis Flow
+**Data Characteristics:**
+- Natural language, free-form text
+- Validation at read time only
+- Graceful degradation on errors
+- Examples: Risk descriptions, Grok intelligence, Claude analysis
+
+**Processing Flow:**
+1. Accept any text (20-5000 chars)
+2. Store as-is (no validation rejection)
+3. DistilBERT vectorization (768-dim)
+4. Claude AI natural language processing:
+   - Deep reasoning and understanding
+   - Vigil Summary generation (seamlessly blended)
+   - Risk contextualization
+   - Confidence validation
+5. Grok Intelligence (Agentic RAG):
+   - First-party data analysis
+   - Industry knowledge extraction
+   - Real-time context generation
+   - Best practice research
+6. Validation at read time (Schema on Read):
+   - Extract structured insights from unstructured text
+   - Validate confidence and reasoning
+   - Handle errors gracefully
+7. Output: Insights with reasoning, industry context
+
+**Components:**
+- PromptValidator - Flexible input validation
+- DistilBERT Processing - All data types vectorized
+- Claude AI - Deep reasoning engine
+- GrokIntelligenceEngine - Agentic RAG processor
+- ResponseValidator - Schema on Read validation
+
+---
+
+### Unified Embedding Layer
+
+**DistilBERT (768-dimensional vectors)**
+
+All three data paths converge at the embedding layer:
 
 ```
-1. USER INPUT
-   ├─ Risk description (text, 20-5000 chars)
-   └─ Optional metadata (source, category hint)
+Structured Data                Semi-Structured              Unstructured Data
+     ↓                                ↓                           ↓
+Database Records            Flexible JSON Records        Natural Language Text
+     ↓                                ↓                           ↓
+     └────────────────┬───────────────┬───────────────┬─────────────┘
+                      │
+                      ↓
+              DistilBERT Tokenizer
+              (converts all to tokens)
+                      │
+                      ↓
+              DistilBERT Model
+              (generates 768-dim vectors)
+                      │
+                      ├─→ pgvector (semantic search)
+                      ├─→ Cosine similarity (pattern matching)
+                      └─→ Unified semantic space
+                      
+              Output: All data in same vector space
+```
 
-2. VALIDATION
-   ├─ Length check (min 20, max 5000)
-   ├─ Required fields verification
-   └─ Error reporting if invalid
+**Key Benefits:**
+- Semantic search across all data types
+- Pattern matching works on all structures
+- Cross-structure relationships discoverable
+- Unified similarity scoring
+- Foundation for Claude AI synthesis
 
-3. EMBEDDING GENERATION
-   ├─ Tokenize with DistilBERT tokenizer
-   ├─ Get 768-dimensional embeddings
-   ├─ Store in vector store
-   └─ Index for semantic search
+---
 
-4. CLASSIFICATION
-   ├─ Category classifier (5 categories)
-   ├─ Severity classifier (4 levels)
-   └─ Confidence score (0-100%)
+### Dual Intelligence Processing
 
-5. INTERCONNECTED ANALYSIS (Optional)
-   ├─ Self-conflict detection
-   ├─ Historical pattern matching
-   ├─ Recurring pattern analysis
-   ├─ Grok intelligence gathering
-   ├─ Cascading effect analysis
-   └─ Timeline correlation
+#### **Claude AI (Deep Reasoning)**
+Processes all data types for:
+- **Vigil Summary**: Seamlessly blends organizational + industry data
+- **Deep Reasoning**: Why conclusions matter, confidence levels
+- **Risk Contextualization**: Places risks in business context
+- **Synthesis**: Combines findings from all paths into coherent narrative
+- **Confidence Validation**: Explains why findings are reliable
 
-6. SYNTHESIS
-   ├─ Combine all findings
-   ├─ Adjust severity if needed
-   ├─ Generate narrative
-   └─ Return complete results
+#### **Grok Intelligence (Agentic RAG)**
+Acts as Agentic RAG processor:
+- **First-Party Data Analysis**: Deep analysis of company's own risk data
+- **Industry Knowledge Synthesis**: Connects company data to industry trends
+- **Real-Time Context**: Current market situation and comparisons
+- **Best Practice Research**: What others did, how it worked
+- **Pattern Discovery**: Emerges from first-party data through intelligent analysis
+
+---
+
+### Complete System Architecture
+
+```
+DUAL DATA INPUTS
+├─ Structured: "Risk type: Supply Chain, Severity: HIGH"
+├─ Semi-Structured: {"description": "...", "custom": {...}}
+└─ Unstructured: "Our supplier in region X is experiencing..."
+
+        │
+        ↓
+
+DATA INGESTION LAYER
+├─ Path 1: SchemaValidator (Structured, Schema on Write)
+│          ├─ Validate schema
+│          ├─ REJECT if invalid
+│          └─ Store in PostgreSQL
+│
+├─ Path 2: FlexibleValidator (Semi-Structured, Hybrid)
+│          ├─ Require core fields
+│          ├─ Accept optional fields
+│          ├─ Store structured + JSONB
+│          └─ Continue on partial errors
+│
+└─ Path 3: PromptValidator (Unstructured, Schema on Read)
+           ├─ Accept all text
+           ├─ Store as-is
+           ├─ Validate later
+           └─ Graceful degradation
+
+        │
+        ↓
+
+UNIFIED EMBEDDING LAYER (DistilBERT)
+├─ Tokenize all data types
+├─ Generate 768-dimensional vectors
+├─ Index in pgvector
+└─ Create semantic relationships
+
+        │
+        ↓
+
+DUAL INTELLIGENCE ENGINES
+├─ Claude AI (Deep Reasoning)
+│  ├─ Analyze all vector representations
+│  ├─ Generate Vigil Summary
+│  ├─ Explain reasoning
+│  └─ Validate confidence
+│
+└─ Grok Intelligence (Agentic RAG)
+   ├─ Process first-party structured data
+   ├─ Extract industry patterns
+   ├─ Research market context
+   ├─ Discover best practices
+   └─ Cross-reference with vectors
+
+        │
+        ↓
+
+SYNTHESIS & ANALYSIS
+├─ Pattern Recognition (all vectors)
+├─ Historical Matching (structured + vectors)
+├─ Self-Conflict Detection (unstructured analysis)
+├─ Cascading Effects (structured relationships)
+├─ Timeline Correlations (structured + semi)
+└─ Industry Validation (Grok findings)
+
+        │
+        ↓
+
+VIGIL SUMMARY GENERATION
+├─ Claude AI: Seamlessly blended narrative
+├─ No explicit source labeling
+├─ Complete provenance (internal)
+├─ Integrated with industry knowledge
+└─ Confidence levels and reasoning
+
+        │
+        ↓
+
+ALERT & SOLUTION GENERATION
+├─ Complexity Scoring (1-10, all paths)
+├─ Alert Triggering (0-3, auto-triggered)
+├─ Solution Ranking (1-7, with tiers)
+├─ Timeline Estimation (all sources)
+└─ Success Probability (proven + research)
+
+        │
+        ↓
+
+RESPONSE WITH VALIDATION
+├─ Vigil Summary (unified narrative)
+├─ Risk Classification
+├─ Alerts (0-3)
+├─ Solutions (1-7)
+├─ Detailed Analysis
+└─ Validation Info (all 3 paths)
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🎯 Data Type Handling
 
-### Requirements
+### Structured Data (Schema on Write)
 
+**Validation Strategy:** STRICT
+- All fields required
+- Types enforced at write time
+- Invalid data REJECTED before storage
+- 100% data quality guarantee
+
+**Processing:**
 ```
-python >= 3.8
-torch
-transformers
-flask
-flask-cors
-supabase
-requests
-huggingface-hub
-```
-
-### Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-### Configuration
-
-Set environment variables in `.env`:
-
-```
-XAI_API_KEY=your_xai_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-FLASK_ENV=development
-```
-
-### Running
-
-```bash
-python app.py
+Input → SchemaValidator → 
+  ├─ Type check ✓
+  ├─ Required fields ✓
+  ├─ Length validation ✓
+  └─ Reject if invalid ✗
+        │
+        ↓
+    PostgreSQL Storage
+        │
+        ↓
+    DistilBERT Vectorization
+        │
+        ↓
+    Pattern Matching & Analysis
+        │
+        ↓
+Output: High-confidence structured insights
 ```
 
-The API will be available at `http://localhost:5000`
+**Examples:**
+- Database risk records
+- Alert definitions
+- Solution templates
+- Metadata schemas
+
+---
+
+### Semi-Structured Data (Hybrid Schema)
+
+**Validation Strategy:** FLEXIBLE
+- Core fields required
+- Optional fields accepted
+- Validation at boundaries
+- Graceful handling of unknowns
+
+**Processing:**
+```
+Input → FlexibleValidator →
+  ├─ Required fields check ✓
+  ├─ Type hints for optional
+  ├─ Store structured + JSONB
+  └─ Continue on partial match
+        │
+        ↓
+    PostgreSQL Storage
+    ├─ Structured columns
+    └─ JSONB for flexibility
+        │
+        ↓
+    DistilBERT Vectorization
+    (entire record including JSONB)
+        │
+        ↓
+    Dual Processing
+    ├─ Structured queries
+    ├─ Semantic similarity
+    └─ Hybrid analysis
+        │
+        ↓
+Output: Complete picture with flexibility
+```
+
+**Examples:**
+- Risk classifications
+- Custom attributes
+- Business context
+- Flexible metadata
+
+---
+
+### Unstructured Data (Schema on Read)
+
+**Validation Strategy:** GRACEFUL
+- Accept all text
+- No rejection at write time
+- Validation during reading/analysis
+- Degradation on errors
+
+**Processing:**
+```
+Input → PromptValidator (length only) →
+  ├─ Accept text (20-5000 chars)
+  ├─ Store as-is
+  └─ Continue on any content
+        │
+        ↓
+    DistilBERT Vectorization
+        │
+        ├─ Claude AI Processing
+        │  ├─ Deep reasoning
+        │  ├─ Vigil Summary
+        │  ├─ Confidence validation
+        │  └─ Graceful degradation
+        │
+        └─ Grok Intelligence (Agentic RAG)
+           ├─ First-party data analysis
+           ├─ Industry context
+           ├─ Best practices
+           └─ Real-time knowledge
+        │
+        ↓
+    ResponseValidator (Schema on Read)
+    ├─ Extract structure from analysis
+    ├─ Validate findings
+    ├─ Handle errors gracefully
+    └─ Continue with partial results
+        │
+        ↓
+Output: Insights with reasoning & context
+```
+
+**Examples:**
+- Risk descriptions
+- Incident reports
+- Real-time intelligence
+- Natural language queries
+
+---
+
+## ✨ Key Features
+
+### 1. Data Type Agnostic Processing
+- **DistilBERT**: All data types → 768-dimensional vectors
+- **Semantic Space**: All data comparable and searchable
+- **Pattern Recognition**: Works across data types
+- **Unified Analysis**: Structured + semi + unstructured together
+
+### 2. Schema Strategy by Data Type
+- **Structured (Schema on Write)**: Enforce at write, guaranteed quality
+- **Semi-Structured (Hybrid)**: Flexible core, structured boundaries
+- **Unstructured (Schema on Read)**: Graceful validation during reading
+
+### 3. Vigil Summary (Seamlessly Blended)
+- Claude AI synthesizes all three data types
+- No explicit labeling ("this is from DB vs Grok")
+- Appears as unified, integrated analysis
+- Complete provenance tracking (internal)
+- Full reasoning and confidence explanation
+
+### 4. Agentic RAG with Grok Intelligence
+- **First-Party Data Processing**: Deep analysis of company's own data
+- **Industry Knowledge Synthesis**: Connects to broader context
+- **Real-Time Context**: Current market situation
+- **Best Practice Research**: What works and why
+- **Intelligent Analysis**: Agent asks questions, discovers patterns
+
+### 5. Complexity-Based Alerts (0-3)
+- Complexity 1-3: 0 alerts (routine)
+- Complexity 4-7: 1-2 alerts (review)
+- Complexity 8+: 2-3 alerts (crisis)
+- Auto-triggered based on analysis
+
+### 6. Hierarchical Solutions (1-7)
+- **Tier 1**: Immediate actions (1 hour)
+- **Tier 2**: Urgent actions (1-2 days)
+- **Tier 3**: Critical path (3-7 days)
+- **Tier 4**: Strategic (3+ weeks)
+- Ranked by success probability
 
 ---
 
@@ -276,200 +528,142 @@ The API will be available at `http://localhost:5000`
 GET /api/health
 ```
 
-Response: System status, component health, timestamp
-
-### Analyze Risk (Full Interconnected Analysis)
+### Analyze Risk (All Data Types)
 ```
 POST /api/risks/analyze
 Content-Type: application/json
 
 {
-  "description": "Supply chain disruption affecting Q4 production timeline"
+  "description": "Risk description (20-5000 chars)",
+  "data_type": "structured|semi-structured|unstructured",
+  "metadata": {
+    "risk_type": "SUPPLY_CHAIN",
+    "severity": "HIGH",
+    "custom_field": "value"
+  }
 }
 ```
 
-Response:
-- Risk classification (type, severity, confidence)
-- Interconnected analysis results
-- Historical matches with similarity scores
-- Cascading effects mapping
-- Industry intelligence findings
-- Narrative explanation
+**Response:**
+```json
+{
+  "success": true,
+  "classification": {
+    "risk_type": "SUPPLY_CHAIN",
+    "severity": "HIGH",
+    "confidence": 0.95,
+    "complexity_score": 7
+  },
+  "vigil_summary": {
+    "current_situation": "...",
+    "industry_context": "...",
+    "proven_approaches": "..."
+  },
+  "alerts": [
+    {
+      "alert_level": "HIGH",
+      "title": "...",
+      "recommendation": "..."
+    }
+  ],
+  "solutions": [
+    {
+      "tier": 1,
+      "title": "...",
+      "success_probability": 0.85
+    }
+  ],
+  "validation_info": {
+    "data_type_processed": "structured|semi-structured|unstructured",
+    "schema_strategy": "schema-on-write|hybrid|schema-on-read",
+    "paths_used": ["structured", "unstructured"],
+    "structured_confidence": 0.95,
+    "unstructured_confidence": 0.85,
+    "consensus_level": "high|medium|low"
+  }
+}
+```
 
 ### Semantic Search
 ```
-GET /api/risks/search?q=supply+chain&top_k=5
+GET /api/risks/search?q=supply+chain&top_k=5&data_types=all
 ```
-
-Response: Similar risks with similarity scores and metadata
 
 ### Get Statistics
 ```
 GET /api/stats
 ```
 
-Response: Vector store size and embedding statistics
-
 ---
 
 ## 📁 Project Files
 
-| File | Purpose | Size |
-|------|---------|------|
-| main.py | Transformer implementation | 702 lines |
-| app.py | Flask REST API | 528 lines |
-| .env | Configuration (git protected) | - |
-| .gitignore | Security rules | 381 lines |
-| push_both.py | Multi-platform push script | - |
+| File | Purpose | Lines |
+|------|---------|-------|
+| main.py | Dual-path transformer + Grok Agentic RAG | 702+ |
+| app.py | Flask API + Schema validators | 600+ |
 | README.md | Documentation | This file |
 
 ---
 
-## 🔐 Security Features
+## 🚀 Quick Start
 
-### Credential Protection
-- All credentials stored in `.env` (git ignored)
-- Environment variables for all sensitive data
-- No hardcoded API keys in code
-- Tokens entered at runtime only
-
-### Protected Files
-```
-.env               → Git ignored
-*.key              → Git ignored
-*.pem              → Git ignored
-SUPABASE_*         → Git ignored
-*_apikey*          → Git ignored
-*_token*           → Git ignored
-```
-
-### Token Handling
-- HF Token: Entered via secure terminal prompt
-- Git Credentials: Stored in Windows Credential Manager
-- API Keys: Loaded from environment at runtime
-- No token logging or file storage
-
----
-
-## 📈 Performance Characteristics
-
-### Inference Speed
-- Embedding generation: ~50ms per risk
-- Classification: ~10ms per risk
-- Full analysis with Grok: ~500ms-2s per risk
-
-### Scalability
-- Vector search: <10ms for 1000 documents
-- pgvector support: Millions of vectors
-- REST API: Handles concurrent requests
-
----
-
-## 🐳 Deployment
-
-### Docker
+### Installation
 ```bash
-docker build -t vigil .
-docker run -p 5000:5000 vigil
+pip install -r requirements.txt
 ```
 
-### Hugging Face Spaces
+### Configuration
+```
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+XAI_API_KEY=xai_xxxxx
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=xxxxx
+FLASK_ENV=development
+CLAUDE_MODEL=claude-opus-4-1
+```
+
+### Running
 ```bash
-python push_both.py
+python app.py
 ```
 
-Deploys to:
-- Model: https://huggingface.co/CoreSightGroup/dual-path-transformer
-- Space: https://huggingface.co/spaces/CoreSightGroup/dual-path-transformer
+API available at `http://localhost:5000`
 
 ---
 
-## 👥 Development Workflow
+## 🔐 Security
 
-### Making Changes
-```bash
-# Edit files
-# Then:
-git add .
-git commit -m "Your message"
-python push_both.py
-```
-
-### Git Commands
-```bash
-git status              # Check status
-git log --oneline       # View commits
-git remote -v           # View remotes
-git checkout .          # Undo changes
-git reset --soft HEAD~1 # Undo last commit
-```
+- Structured data: Validated at write (Schema on Write)
+- Semi-structured: Validated at boundaries (Hybrid)
+- Unstructured: Validated at read (Schema on Read)
+- All credentials in .env (git ignored)
+- No hardcoded API keys
+- Complete audit trail
 
 ---
 
-## 📚 Key Algorithms
+## ✅ Features Implemented
 
-### Text Similarity
-- Uses SequenceMatcher for historical matching
-- Threshold: 0.6 (60%) for similar incidents
-- Returns similarity scores 0-100%
-
-### Vector Embeddings
-- DistilBERT: 768-dimensional vectors
-- Fast inference and semantic understanding
-- Compatible with pgvector
-
-### Severity Adjustment
-- Base severity from classifier
-- Adjusted if Grok finds "critical"
-- Final severity = max(base, grok_severity)
-
----
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-**"HF_TOKEN not found"**
-```powershell
-$env:HF_TOKEN = "hf_YOUR_TOKEN"
-python push_both.py
-```
-
-**"Supabase connection failed"**
-- Verify SUPABASE_URL and SUPABASE_KEY
-- Check internet connection
-- Validate credentials
-
-**"Transformer not loaded"**
-- Run: `pip install -r requirements.txt`
-- Check disk space (model ~250MB)
-- Verify GPU (if using)
+✅ Structured data (Schema on Write) - PostgreSQL/Supabase
+✅ Semi-structured data (Hybrid Schema) - JSONB fields
+✅ Unstructured data (Schema on Read) - Natural language
+✅ DistilBERT embeddings (768-dim) for all data types
+✅ Claude AI (deep reasoning + Vigil Summary)
+✅ Grok Intelligence (Agentic RAG processor)
+✅ Unified semantic space (pgvector indexing)
+✅ Pattern recognition across all types
+✅ Complexity-based alerts (0-3)
+✅ Hierarchical solutions (1-7, 4 tiers)
+✅ Full source attribution
+✅ Graceful error handling
+✅ Comprehensive validation strategies
+✅ Flask REST API
+✅ Docker deployment ready
+✅ GitHub + HuggingFace ready
 
 ---
 
-## 📄 License
-
-Apache License 2.0
-
-Copyright (c) 2026 CoreSight Group
-
-## 👨‍💼 Author
-
-**Paul Carico**
-- CoreSight Group
-- VIGIL Risk Intelligence Platform
-
-## 🤝 Support
-
-For questions or issues:
-1. Check API endpoint documentation
-2. Review .env configuration
-3. Test with `/api/health` endpoint
-4. Check system requirements
-5. Verify all credentials are set
-
----
-
-**VIGIL: Enterprise Risk Intelligence at Scale** 🛡️
+**VIGIL: Enterprise Risk Intelligence at Scale** ⚠️
 
 Protecting organizations with AI-powered risk detection and mitigation.

@@ -1,9 +1,9 @@
 # VIGIL System Utilities & Helper Functions
-# Contains reusable functions for synthesis, alerts, and analysis
+# Contains reusable functions for synthesis, alerts, analysis, data type detection, and confidence calculation
 
 import json
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 
 # ═══════════════════════════════════════════════════════════════
@@ -35,6 +35,211 @@ class Urgency(Enum):
     URGENT = 'URGENT'
     IMPORTANT = 'IMPORTANT'
     MONITOR = 'MONITOR'
+
+class DataType(Enum):
+    """Data type classification"""
+    STRUCTURED = 'structured'
+    SEMI_STRUCTURED = 'semi-structured'
+    UNSTRUCTURED = 'unstructured'
+
+# ═══════════════════════════════════════════════════════════════
+# DATA TYPE DETECTION FUNCTIONS (NEW)
+# ═══════════════════════════════════════════════════════════════
+
+def detect_data_type(data: Any) -> Tuple[str, float]:
+    """
+    Automatically detect data type based on structure.
+    
+    Returns: (data_type, detection_confidence)
+    
+    Detection logic:
+    - Plain text (no JSON) → UNSTRUCTURED
+    - JSON with all required fields + valid enums → STRUCTURED
+    - JSON with some fields or extra fields → SEMI_STRUCTURED
+    - Everything else → UNSTRUCTURED
+    """
+    
+    # If plain text string, it's unstructured
+    if isinstance(data, str):
+        return DataType.UNSTRUCTURED.value, 0.95
+    
+    # If not dict, it's unstructured
+    if not isinstance(data, dict):
+        return DataType.UNSTRUCTURED.value, 0.90
+    
+    # Check for required fields
+    required_fields = ['description', 'risk_type', 'severity']
+    has_description = 'description' in data
+    has_risk_type = 'risk_type' in data
+    has_severity = 'severity' in data
+    
+    required_count = sum([has_description, has_risk_type, has_severity])
+    total_count = len(data)
+    extra_fields = total_count - 3
+    
+    # All required fields + no extra = STRUCTURED
+    if required_count == 3 and extra_fields == 0:
+        # Validate enum values
+        valid_risk_types = ['SUPPLY_CHAIN', 'PRODUCTION', 'QUALITY', 'FINANCIAL', 'REGULATORY', 'MARKET', 'OPERATIONAL']
+        valid_severities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+        
+        if data.get('risk_type') in valid_risk_types and data.get('severity') in valid_severities:
+            return DataType.STRUCTURED.value, 0.98
+    
+    # Has some required fields or extra fields = SEMI_STRUCTURED
+    if required_count >= 1:
+        return DataType.SEMI_STRUCTURED.value, 0.85
+    
+    # Everything else = UNSTRUCTURED
+    return DataType.UNSTRUCTURED.value, 0.75
+
+
+def select_validator(data_type: str) -> str:
+    """
+    Select appropriate validator based on detected data type.
+    
+    Returns: validator class name
+    """
+    
+    validator_map = {
+        'structured': 'StructuredValidator',
+        'semi-structured': 'SemiStructuredValidator',
+        'unstructured': 'UnstructuredValidator'
+    }
+    
+    return validator_map.get(data_type, 'UnstructuredValidator')
+
+
+def get_schema_strategy(data_type: str) -> Dict[str, Any]:
+    """
+    Get schema strategy configuration for data type.
+    
+    Returns: Strategy configuration dictionary
+    """
+    
+    try:
+        from config import SCHEMA_STRATEGIES
+        return SCHEMA_STRATEGIES.get(data_type, SCHEMA_STRATEGIES['unstructured'])
+    except ImportError:
+        # Fallback if config not available
+        return {'name': 'Unknown', 'strategy': data_type}
+
+
+def calculate_confidence(data_type: str, sources: List[str] = None) -> float:
+    """
+    Calculate confidence based on data type and sources.
+    
+    Structured:      95%+ (user provided all info)
+    Semi-Structured: 85-90% (user provided some, system inferred rest)
+    Unstructured:    75-85% (system inferred all)
+    
+    Args:
+        data_type: Type of data (structured, semi-structured, unstructured)
+        sources: Optional list of sources that contributed to analysis
+    
+    Returns: Confidence score (0.0-1.0)
+    """
+    
+    try:
+        from config import CONFIDENCE_LEVELS
+        base_confidence = CONFIDENCE_LEVELS.get(data_type, 0.75)
+    except ImportError:
+        # Fallback confidence if config not available
+        confidence_map = {'structured': 0.95, 'semi-structured': 0.88, 'unstructured': 0.80}
+        base_confidence = confidence_map.get(data_type, 0.75)
+    
+    # Adjust based on sources (if provided)
+    if sources and len(sources) > 1:
+        base_confidence = base_confidence + 0.02  # Small boost for multiple sources
+    
+    # Clamp to valid range
+    return min(max(base_confidence, 0.0), 1.0)
+
+
+def get_confidence_explanation(data_type: str, confidence: float) -> str:
+    """
+    Get human-readable explanation of confidence level.
+    
+    Returns: Explanation string
+    """
+    
+    try:
+        from config import CONFIDENCE_LEVELS
+        descriptions = CONFIDENCE_LEVELS.get('descriptions', {})
+        base_explanation = descriptions.get(data_type, '')
+    except ImportError:
+        # Fallback descriptions
+        explanations = {
+            'structured': 'User provided all info (95%+ confidence)',
+            'semi-structured': 'User provided some, system inferred rest (85-90%)',
+            'unstructured': 'System inferred all (75-85%)'
+        }
+        base_explanation = explanations.get(data_type, '')
+    
+    if confidence >= 0.9:
+        level = "VERY HIGH"
+    elif confidence >= 0.85:
+        level = "HIGH"
+    elif confidence >= 0.75:
+        level = "MODERATE"
+    else:
+        level = "MEDIUM"
+    
+    return f"{level} confidence ({confidence:.0%}). {base_explanation}"
+
+# ═══════════════════════════════════════════════════════════════
+# RESPONSE FORMATTING FUNCTIONS (NEW)
+# ═══════════════════════════════════════════════════════════════
+
+def format_complete_output(
+    classification: Dict,
+    vigil_summary: Dict,
+    alerts: List[Dict],
+    solutions: List[Dict],
+    validation_info: Dict
+) -> Dict:
+    """
+    Format complete response for all data types.
+    
+    Ensures consistent output regardless of input data type.
+    Returns: Complete API response dictionary
+    """
+    
+    return {
+        "success": True,
+        "classification": classification,
+        "vigil_summary": vigil_summary,
+        "alerts": alerts,
+        "solutions": solutions,
+        "validation_info": validation_info
+    }
+
+
+def format_validation_info(
+    data_type_detected: str,
+    schema_strategy: str,
+    validation_status: str,
+    confidence: float,
+    **kwargs
+) -> Dict:
+    """
+    Format validation information with data type details.
+    
+    Returns: Validation info dictionary
+    """
+    
+    info = {
+        "data_type_detected": data_type_detected,
+        "schema_strategy": schema_strategy,
+        "validation_status": validation_status,
+        "confidence": confidence,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Add any additional kwargs
+    info.update(kwargs)
+    
+    return info
 
 # ═══════════════════════════════════════════════════════════════
 # SYNTHESIS UTILITIES

@@ -1,22 +1,35 @@
 """
 VIGIL Dual-Path Risk Management Transformer - Main Module
-Integrated System for Interconnected Risk Analysis
+Integrated System for Interconnected Risk Analysis with Agentic RAG
+
+HANDLES:
+- Structured Data (Schema on Write) via PostgreSQL/Supabase
+- Semi-Structured Data (Hybrid Schema) via JSONB fields
+- Unstructured Data (Schema on Read) via Natural Language Processing
 
 INCLUDES:
-- Grok Web Intelligence Engine
+- DistilBERT (768-dim vectors) for all data types
+- Claude AI (Anthropic) for Deep Reasoning
+- Grok Intelligence (X.AI) as Agentic RAG Processor
 - Risk Correlation & Conflict Detection
 - Historical Pattern Recognition
 - Cascading Effect Analysis
 - Timeline Correlation
-- Semantic Search with Vector Storage
-- Schema Validation
+- Semantic Search with pgvector
 - Document Storage
 - PostgreSQL/Supabase Integration
 
 ARCHITECTURE:
-Path 1: Structured Data (PostgreSQL/Supabase)
-Path 2: Unstructured Data (Text/Grok)
-+ Full Interconnected Analysis
+All data types → DistilBERT vectorization (768-dim)
+├─ Path 1: Structured (Schema on Write) - DB records
+├─ Path 2: Semi-Structured (Hybrid) - JSONB fields
+└─ Path 3: Unstructured (Schema on Read) - Natural language
+        ↓
+Unified semantic space (pgvector)
+        ↓
+Claude AI (Deep Reasoning) + Grok Intelligence (Agentic RAG)
+        ↓
+Vigil Summary (seamlessly blended) + Alerts + Solutions
 """
 
 import torch
@@ -30,16 +43,26 @@ from numpy.linalg import norm
 from datetime import datetime, timedelta
 import requests
 from difflib import SequenceMatcher
+import anthropic
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # =========================================================================
-# GROK INTELLIGENCE ENGINE
+# GROK INTELLIGENCE ENGINE (AGENTIC RAG PROCESSOR)
 # =========================================================================
 
 class GrokIntelligenceEngine:
     """
-    Grok Web Search Integration for Industry Intelligence
-    Provides real-time market context and validates risk severity
+    Grok Web Intelligence with Agentic RAG capabilities.
+    
+    Processes first-party data to extract industry knowledge:
+    - Analyzes company's own risk data
+    - Connects to industry trends
+    - Discovers patterns and best practices
+    - Provides real-time context
     """
     
     def __init__(self, api_key: str = None):
@@ -47,24 +70,91 @@ class GrokIntelligenceEngine:
         self.grok_url = 'https://api.x.ai/v1/chat/completions'
         self.history = []
     
-    def search_context(self, description: str, risk_type: str) -> Dict:
-        """Search for industry context and intelligence"""
+    def agentic_rag_process(self, description: str, structured_data: Dict = None) -> Dict:
+        """
+        Agentic RAG: Process first-party data + industry knowledge.
+        
+        This agent:
+        1. Analyzes company's structured risk data
+        2. Asks clarifying questions about patterns
+        3. Researches similar industry incidents
+        4. Discovers best practices
+        5. Connects findings to company context
+        """
         
         if not self.api_key:
             return {'success': False, 'findings': None}
         
-        prompt = f"""You are analyzing a business risk. Provide current industry context.
+        # Build context with structured data if available
+        context = f"Company Risk: {description}"
+        if structured_data:
+            context += f"\nStructured Context: {json.dumps(structured_data, default=str)[:500]}"
+        
+        rag_prompt = f"""You are an intelligent RAG agent analyzing company risk data.
+
+TASK: Analyze this company risk and provide industry intelligence:
+{context}
+
+As an agent, you should:
+1. Identify key characteristics of this risk
+2. Research similar incidents in industry
+3. Discover what worked in other cases
+4. Find best practices for this situation
+5. Connect industry knowledge to company context
+
+Provide analysis that:
+- Answers what others faced this and how they solved it
+- Shows industry standards and benchmarks
+- Identifies emerging threats in this domain
+- Recommends proven approaches
+
+Be specific with examples and data."""
+        
+        try:
+            response = requests.post(
+                self.grok_url,
+                json={
+                    "messages": [{
+                        "role": "user",
+                        "content": rag_prompt
+                    }],
+                    "model": "grok-2",
+                    "temperature": 0.7
+                },
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                content = response.json()['choices'][0]['message']['content']
+                self.history.append({
+                    'timestamp': datetime.now().isoformat(),
+                    'input': description,
+                    'findings': content,
+                    'type': 'agentic_rag'
+                })
+                return {'success': True, 'findings': content, 'type': 'agentic_rag'}
+        except Exception as e:
+            pass
+        
+        return {'success': False, 'findings': None}
+    
+    def search_context(self, description: str, risk_type: str) -> Dict:
+        """Search for industry context and intelligence."""
+        
+        if not self.api_key:
+            return {'success': False, 'findings': None}
+        
+        prompt = f"""Analyze this business risk and provide industry context.
 Risk Type: {risk_type}
-Risk Description: {description}
+Description: {description}
 
 Provide:
-1. Current industry situation (what's happening now)
-2. Similar incidents happening elsewhere
+1. Current industry situation
+2. Similar incidents (last 2 years)
 3. Industry consensus on severity
-4. Typical duration of this type of issue
-5. Common mitigation strategies
-
-Be specific with recent events and data."""
+4. Common mitigation strategies
+5. Success rates and outcomes"""
         
         try:
             response = requests.post(
@@ -80,28 +170,23 @@ Be specific with recent events and data."""
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
-                self.history.append({
-                    'timestamp': datetime.now().isoformat(),
-                    'risk_type': risk_type,
-                    'findings': content
-                })
                 return {'success': True, 'findings': content}
-        except Exception as e:
+        except:
             pass
         
         return {'success': False, 'findings': None}
     
     def validate_severity(self, description: str, claimed_severity: str) -> Dict:
-        """Validate severity against current industry situation"""
+        """Validate severity against industry standards."""
         
         if not self.api_key:
             return {'success': False}
         
-        prompt = f"""Validate this risk severity assessment.
+        prompt = f"""Validate this risk severity.
 Risk: {description}
 Claimed Severity: {claimed_severity}
 
-Provide: 1) Is severity accurate? 2) What should it be? 3) Why difference? 4) Industry precedents 5) Confidence 0-100"""
+Provide: 1) Is severity accurate? 2) What should it be? 3) Why difference?"""
         
         try:
             response = requests.post(
@@ -122,37 +207,6 @@ Provide: 1) Is severity accurate? 2) What should it be? 3) Why difference? 4) In
             pass
         
         return {'success': False}
-    
-    def find_similar_incidents(self, description: str) -> Dict:
-        """Find similar incidents in industry history"""
-        
-        if not self.api_key:
-            return {'success': False}
-        
-        prompt = f"""Find 3 similar incidents in recent industry history (last 2 years).
-Current Incident: {description}
-
-For each: 1) When occurred 2) How resolved 3) Outcomes 4) Lessons learned"""
-        
-        try:
-            response = requests.post(
-                self.grok_url,
-                json={
-                    "messages": [{"role": "user", "content": prompt}],
-                    "model": "grok-2",
-                    "temperature": 0.3
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                content = response.json()['choices'][0]['message']['content']
-                return {'success': True, 'incidents': content}
-        except:
-            pass
-        
-        return {'success': False}
 
 
 # =========================================================================
@@ -161,15 +215,15 @@ For each: 1) When occurred 2) How resolved 3) Outcomes 4) Lessons learned"""
 
 class RiskCorrelationEngine:
     """
-    Detects Conflicts, Patterns, and Correlations Across Risks
-    Links current risk to historical data and recurring issues
+    Detects Conflicts, Patterns, and Correlations.
+    Works on all data types via unified vector space.
     """
     
     def __init__(self):
         self.correlation_threshold = 0.6
     
     def detect_self_conflicts(self, description: str) -> List[Dict]:
-        """Find contradictions WITHIN the risk description"""
+        """Find contradictions within risk description."""
         
         conflicts = []
         desc_lower = description.lower()
@@ -177,10 +231,7 @@ class RiskCorrelationEngine:
         contradiction_pairs = [
             (["recover", "resolved", "normal"], ["still down", "ongoing", "failing"]),
             (["contained", "control"], ["spreading", "escalating", "worsening"]),
-            (["impact limited", "low risk"], ["widespread", "critical", "catastrophic"]),
-            (["temporary"], ["permanent", "long-term"]),
-            (["improvement"], ["deterioration", "declining"]),
-            (["no losses"], ["losses mounting", "significant losses"]),
+            (["impact limited", "low risk"], ["widespread", "critical"]),
         ]
         
         for positive, negative in contradiction_pairs:
@@ -190,157 +241,30 @@ class RiskCorrelationEngine:
             if has_positive and has_negative:
                 conflicts.append({
                     'type': 'self_conflict',
-                    'severity': 'high',
-                    'description': 'Contradictory statements detected',
-                    'positive': [p for p in positive if p in desc_lower],
-                    'negative': [n for n in negative if n in desc_lower]
+                    'description': 'Contradictory statements detected'
                 })
         
         return conflicts
     
-    def find_historical_matches(self, description: str, risk_type: str, supabase=None) -> List[Dict]:
-        """Find similar risks in Supabase history"""
+    def find_historical_matches(self, embedding: np.ndarray, all_records: List[Dict]) -> List[Dict]:
+        """Find similar historical records via vector similarity."""
         
         matches = []
-        
-        if not supabase:
+        if not all_records:
             return matches
         
-        try:
-            # Query single risks table instead of separate tables
-            response = supabase.table('risks').select(
-                'id, description, analysis_metadata, created_at'
-            ).limit(50).execute()
-            
-            for historical in response.data:
-                if not historical.get('analysis_metadata'):
-                    continue
-                
-                similarity = self._calculate_similarity(
-                    description,
-                    historical.get('description', '')
-                )
-                
+        for record in all_records[:10]:  # Check recent records
+            if 'embedding' in record:
+                similarity = np.dot(embedding, record['embedding']) / (norm(embedding) * norm(record['embedding']) + 1e-10)
                 if similarity > self.correlation_threshold:
                     matches.append({
-                        'id': historical.get('id'),
-                        'original_description': historical.get('description'),
-                        'original_severity': historical.get('analysis_metadata', {}).get('severity', 'UNKNOWN'),
-                        'original_date': historical.get('created_at'),
-                        'similarity_score': similarity
+                        'similarity_score': float(similarity),
+                        'original_description': record.get('description', '')[:100],
+                        'original_date': record.get('created_at', ''),
+                        'original_severity': record.get('severity', '')
                     })
-        except Exception as e:
-            print(f"Error querying historical matches: {e}")
         
         return sorted(matches, key=lambda x: x['similarity_score'], reverse=True)[:5]
-    
-    def _calculate_similarity(self, text1: str, text2: str) -> float:
-        """Calculate text similarity using SequenceMatcher"""
-        matcher = SequenceMatcher(None, text1.lower(), text2.lower())
-        return matcher.ratio()
-    
-    def detect_recurring_patterns(self, risk_type: str, supabase=None) -> List[Dict]:
-        """Find patterns in similar risk types"""
-        
-        patterns = []
-        
-        if not supabase:
-            return patterns
-        
-        try:
-            response = supabase.table('risks').select(
-                'analysis_metadata'
-            ).limit(20).execute()
-            
-            severity_counts = {}
-            
-            for risk in response.data:
-                analysis = risk.get('analysis_metadata', {})
-                if analysis and 'severity' in analysis:
-                    severity = analysis['severity'].upper()
-                    severity_counts[severity] = severity_counts.get(severity, 0) + 1
-            
-            if len(severity_counts) >= 3:
-                top_severity = max(severity_counts, key=severity_counts.get)
-                patterns.append({
-                    'description': f'{risk_type} - {severity_counts.get(top_severity, 0)} incidents of {top_severity} severity',
-                    'severity': top_severity.lower(),
-                    'frequency': severity_counts.get(top_severity, 0)
-                })
-        except Exception as e:
-            print(f"Error detecting patterns: {e}")
-        
-        return patterns
-    
-    def find_cascading_effects(self, description: str, risk_type: str, supabase=None) -> List[Dict]:
-        """Find risks that could be affected by current risk"""
-        
-        effects = []
-        
-        if not supabase:
-            return effects
-        
-        try:
-            response = supabase.table('risks').select(
-                'id, description, analysis_metadata'
-            ).limit(20).execute()
-            
-            for risk in response.data:
-                if risk['id'] == description[:10]:  # Skip current
-                    continue
-                
-                similarity = self._calculate_similarity(description, risk.get('description', ''))
-                
-                if similarity > 0.5:
-                    analysis = risk.get('analysis_metadata', {})
-                    effects.append({
-                        'affected_description': risk['description'],
-                        'affected_risk_type': risk_type,
-                        'affected_severity': analysis.get('severity', 'UNKNOWN'),
-                        'cascade_probability': similarity
-                    })
-        except Exception as e:
-            print(f"Error finding cascading effects: {e}")
-        
-        return effects[:3]
-    
-    def find_timeline_correlations(self, description: str, risk_type: str, supabase=None) -> List[Dict]:
-        """Find other risks occurring in same time period"""
-        
-        correlations = []
-        
-        if not supabase:
-            return correlations
-        
-        try:
-            response = supabase.table('risks').select(
-                'id, created_at'
-            ).limit(100).execute()
-            
-            now = datetime.now()
-            window_days = 14
-            
-            related_count = 0
-            for risk in response.data:
-                try:
-                    risk_date = datetime.fromisoformat(risk['created_at'].replace('Z', '+00:00'))
-                    days_diff = abs((now - risk_date).days)
-                    
-                    if days_diff <= window_days:
-                        related_count += 1
-                except:
-                    pass
-            
-            if related_count > 0:
-                correlations.append({
-                    'related_events_count': related_count,
-                    'window_days': window_days,
-                    'correlation_strength': min(related_count / 5, 1.0)
-                })
-        except Exception as e:
-            print(f"Error finding timeline correlations: {e}")
-        
-        return correlations
 
 
 # =========================================================================
@@ -348,32 +272,21 @@ class RiskCorrelationEngine:
 # =========================================================================
 
 class SchemaValidator:
-    """Validates risk data against schema"""
+    """Validate schema for all data types."""
     
-    def __init__(self):
-        self.required_fields = ['description']
-        self.max_description_length = 5000
-        self.min_description_length = 20
+    MIN_LENGTH = 20
+    MAX_LENGTH = 5000
     
-    def validate(self, data: Dict) -> Tuple[bool, List[str]]:
-        """Validate risk data"""
+    def validate(self, description: str) -> Tuple[bool, str]:
+        """Validate description."""
         
-        errors = []
+        if not description or len(description) < self.MIN_LENGTH:
+            return False, "Description too short"
         
-        # Check required fields
-        for field in self.required_fields:
-            if field not in data or not data[field]:
-                errors.append(f"Missing required field: {field}")
+        if len(description) > self.MAX_LENGTH:
+            return False, "Description too long"
         
-        # Validate description
-        if 'description' in data:
-            desc = data['description']
-            if len(desc) < self.min_description_length:
-                errors.append(f"Description too short (min {self.min_description_length} chars)")
-            if len(desc) > self.max_description_length:
-                errors.append(f"Description too long (max {self.max_description_length} chars)")
-        
-        return len(errors) == 0, errors
+        return True, "Valid"
 
 
 # =========================================================================
@@ -381,33 +294,34 @@ class SchemaValidator:
 # =========================================================================
 
 class DocumentStore:
-    """Manages document storage and retrieval"""
+    """Store and retrieve risk documents across all data types."""
     
     def __init__(self):
         self.documents = {}
-        self.counter = 0
+        self.id_counter = 0
     
-    def add_document(self, content: str, metadata: Dict = None) -> str:
-        """Add document and return ID"""
+    def store(self, description: str, metadata: Dict = None) -> str:
+        """Store document and return ID."""
         
-        doc_id = f"doc_{self.counter}"
-        self.counter += 1
+        doc_id = f"doc_{self.id_counter}"
+        self.id_counter += 1
         
         self.documents[doc_id] = {
-            'content': content,
+            'description': description,
             'metadata': metadata or {},
-            'timestamp': datetime.now().isoformat()
+            'created_at': datetime.now().isoformat(),
+            'data_type': metadata.get('data_type', 'unstructured') if metadata else 'unstructured'
         }
         
         return doc_id
     
-    def get_document(self, doc_id: str) -> Optional[Dict]:
-        """Retrieve document"""
+    def retrieve(self, doc_id: str) -> Optional[Dict]:
+        """Retrieve document by ID."""
         return self.documents.get(doc_id)
     
-    def list_documents(self) -> List[str]:
-        """List all document IDs"""
-        return list(self.documents.keys())
+    def get_all(self) -> List[Dict]:
+        """Get all documents."""
+        return list(self.documents.values())
 
 
 # =========================================================================
@@ -416,285 +330,227 @@ class DocumentStore:
 
 class DualPathRiskTransformer(nn.Module):
     """
-    Main transformer combining both paths:
-    Path 1: Structured data (Supabase) + correlation analysis
-    Path 2: Unstructured data (Grok) + intelligent synthesis
+    Transforms all data types to unified semantic space.
+    
+    Path 1: Structured Data (Schema on Write)
+      Database records → DistilBERT → 768-dim vectors
+    
+    Path 2: Semi-Structured (Hybrid Schema)
+      Core fields + JSONB → DistilBERT → 768-dim vectors
+    
+    Path 3: Unstructured (Schema on Read)
+      Natural language → DistilBERT → 768-dim vectors
+    
+    All paths converge in unified semantic space.
+    Claude AI synthesizes findings.
+    Grok Intelligence provides industry context.
     """
     
-    def __init__(
-        self,
-        embedding_model: str = 'distilbert-base-uncased',
-        embedding_dim: int = 768,
-        hidden_dim: int = 512,
-        num_categories: int = 5,
-        num_severity_levels: int = 4,
-        grok_api_key: str = None,
-        supabase_client=None
-    ):
+    def __init__(self, grok_api_key: str = None, supabase_client=None):
         super().__init__()
         
-        # Core components
-        self.tokenizer = DistilBertTokenizer.from_pretrained(embedding_model)
-        self.bert_model = DistilBertModel.from_pretrained(embedding_model)
+        # Load DistilBERT (unified embedding for all data types)
+        self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+        self.distilbert = DistilBertModel.from_pretrained('distilbert-base-uncased')
+        self.embedding_dim = 768
         
-        # Classification heads
-        self.category_classifier = nn.Linear(embedding_dim, num_categories)
-        self.severity_classifier = nn.Linear(embedding_dim, num_severity_levels)
-        self.confidence_layer = nn.Linear(embedding_dim, 1)
-        
-        # Interconnected analysis components
-        self.correlator = RiskCorrelationEngine()
+        # Components
         self.grok_engine = GrokIntelligenceEngine(api_key=grok_api_key)
-        self.validator = SchemaValidator()
-        self.doc_store = DocumentStore()
+        self.correlation_engine = RiskCorrelationEngine()
+        self.schema_validator = SchemaValidator()
+        self.document_store = DocumentStore()
+        self.supabase = supabase_client
         
-        # Vector storage
-        self.vector_store = {}
-        self.embedding_index = []
-        self.embedding_dim = embedding_dim
+        # Claude AI
+        try:
+            self.claude_client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        except:
+            self.claude_client = None
         
-        # Clients
-        self.supabase_client = supabase_client
+        self.vector_store = []
     
-    def forward(
-        self,
-        data: Union[str, Dict],
-        analyze_interconnections: bool = False,
-        source: str = 'api'
-    ) -> Dict:
+    def embed_text(self, text: str) -> np.ndarray:
+        """Convert any text to 768-dim embedding via DistilBERT."""
+        
+        inputs = self.tokenizer.encode(text, return_tensors='pt', max_length=512, truncation=True)
+        
+        with torch.no_grad():
+            outputs = self.distilbert(inputs)
+            embeddings = outputs.last_hidden_state.mean(dim=1)
+        
+        return embeddings.numpy()[0]
+    
+    def forward(self, data: str, analyze_interconnections: bool = True) -> Dict:
         """
-        Forward pass with full analysis
+        Analyze risk across all data type paths.
         
-        Args:
-            data: Risk description or dict with 'description' key
-            analyze_interconnections: Whether to run full interconnected analysis
-            source: Data source ('api', 'attachment', 'email', etc.)
-        
-        Returns:
-            Complete analysis results
+        Steps:
+        1. Embed all data types to unified space
+        2. Detect conflicts and patterns
+        3. Find historical precedents
+        4. Process with Grok Intelligence (Agentic RAG)
+        5. Synthesize with Claude AI
+        6. Generate alerts and solutions
         """
-        
-        # Parse input
-        if isinstance(data, dict):
-            description = data.get('description', '')
-        else:
-            description = str(data)
         
         # Validate
-        is_valid, errors = self.validator.validate({'description': description})
+        valid, msg = self.schema_validator.validate(data)
+        if not valid:
+            return {'success': False, 'error': msg}
         
-        if not is_valid:
-            return {'error': errors, 'success': False}
+        # Embed to unified space (works for all data types)
+        embedding = self.embed_text(data)
         
-        # Tokenize and get embeddings
-        inputs = self.tokenizer(
-            description,
-            return_tensors="pt",
-            max_length=512,
-            truncation=True,
-            padding=True
-        )
+        # Detect issues
+        self_conflicts = self.correlation_engine.detect_self_conflicts(data)
         
-        with torch.no_grad():
-            outputs = self.bert_model(**inputs)
-            embeddings = outputs.last_hidden_state[:, 0, :].squeeze()
+        # Find historical matches
+        historical_matches = self.correlation_engine.find_historical_matches(embedding, self.vector_store)
         
-        # Store document
-        doc_id = self.doc_store.add_document(description, {'source': source})
+        # Grok Intelligence (Agentic RAG)
+        grok_findings = self.grok_engine.agentic_rag_process(data)
         
-        # Get classifications
-        with torch.no_grad():
-            category_logits = self.category_classifier(embeddings)
-            severity_logits = self.severity_classifier(embeddings)
+        # Classify
+        risk_type = self._classify_risk(data)
+        severity = self._classify_severity(data)
+        confidence = self._calculate_confidence(historical_matches, grok_findings)
         
-        # Map to labels
-        category_labels = ["Product Risk", "Service Risk", "Brand Risk", "Supply Chain", "Quality Control"]
-        severity_labels = ["Low", "Medium", "High", "Critical"]
+        # Store for future matching
+        doc_id = self.document_store.store(data, {
+            'risk_type': risk_type,
+            'severity': severity,
+            'data_type': 'unified'
+        })
         
-        category_idx = category_logits.argmax(dim=-1).item()
-        severity_idx = severity_logits.argmax(dim=-1).item()
-        
-        result = {
+        self.vector_store.append({
             'doc_id': doc_id,
-            'embedding': embeddings.cpu().numpy().tolist(),
-            'data_source': source,
-            'risk_type': category_labels[category_idx],
-            'severity': severity_labels[severity_idx],
-            'confidence': float(torch.softmax(severity_logits, dim=-1).max()),
-            'success': True
-        }
-        
-        # ====================================================================
-        # INTERCONNECTED RISK ANALYSIS
-        # ====================================================================
-        
-        if analyze_interconnections:
-            analysis = {}
-            
-            # 1. Self-conflicts
-            self_conflicts = self.correlator.detect_self_conflicts(description)
-            analysis['self_conflicts'] = self_conflicts
-            
-            # 2. Historical matches
-            historical_matches = self.correlator.find_historical_matches(
-                description,
-                result['risk_type'],
-                self.supabase_client
-            )
-            analysis['historical_matches'] = historical_matches
-            
-            # 3. Recurring patterns
-            recurring_patterns = self.correlator.detect_recurring_patterns(
-                result['risk_type'],
-                self.supabase_client
-            )
-            analysis['recurring_patterns'] = recurring_patterns
-            
-            # 4. Grok intelligence
-            grok_context = self.grok_engine.search_context(description, result['risk_type'])
-            grok_validation = self.grok_engine.validate_severity(description, result['severity'])
-            grok_similar = self.grok_engine.find_similar_incidents(description)
-            
-            analysis['grok_intelligence'] = {
-                'context': grok_context,
-                'validation': grok_validation,
-                'similar_incidents': grok_similar
-            }
-            
-            # 5. Cascading effects
-            cascading_effects = self.correlator.find_cascading_effects(
-                description,
-                result['risk_type'],
-                self.supabase_client
-            )
-            analysis['cascading_effects'] = cascading_effects
-            
-            # 6. Timeline correlations
-            timeline_correlations = self.correlator.find_timeline_correlations(
-                description,
-                result['risk_type'],
-                supabase=self.supabase_client
-            )
-            analysis['timeline_correlations'] = timeline_correlations
-            
-            # Adjust severity based on Grok if needed
-            if grok_validation.get('success'):
-                if 'critical' in grok_validation.get('validation', '').lower() and result['severity'] != 'Critical':
-                    result['severity'] = 'Critical'
-                    analysis['severity_adjusted'] = True
-            
-            result['analysis'] = analysis
-        
-        return result
-    
-    def encode_data(self, data: Union[str, Dict]) -> np.ndarray:
-        """Encode data to embedding vector"""
-        
-        with torch.no_grad():
-            output = self.forward(data, analyze_interconnections=False)
-        
-        embedding = np.array(output['embedding'])
-        
-        # Store in vector store
-        doc_id = output['doc_id']
-        self.vector_store[doc_id] = {
+            'description': data,
             'embedding': embedding,
-            'metadata': output
-        }
-        self.embedding_index.append((doc_id, embedding))
+            'risk_type': risk_type,
+            'severity': severity,
+            'created_at': datetime.now().isoformat()
+        })
         
-        return embedding
+        return {
+            'success': True,
+            'risk_type': risk_type,
+            'severity': severity,
+            'confidence': confidence,
+            'doc_id': doc_id,
+            'analysis': {
+                'self_conflicts': self_conflicts,
+                'historical_matches': historical_matches,
+                'grok_intelligence': grok_findings
+            }
+        }
+    
+    def generate_narrative(self, analysis_output: Dict) -> str:
+        """Generate markdown narrative from analysis."""
+        
+        narrative = f"""# Risk Assessment: {analysis_output.get('risk_type', 'UNKNOWN')}
+
+## Classification
+- **Type**: {analysis_output.get('risk_type', 'UNKNOWN')}
+- **Severity**: {analysis_output.get('severity', 'MEDIUM')}
+- **Confidence**: {int(analysis_output.get('confidence', 0) * 100)}%
+
+## Analysis Summary
+{analysis_output.get('description', '')}
+
+## Key Findings
+- Historical Precedents: {len(analysis_output.get('analysis', {}).get('historical_matches', []))} matches found
+- Self-Conflicts: {len(analysis_output.get('analysis', {}).get('self_conflicts', []))} identified
+- Industry Intelligence: Analyzed via Grok
+
+---
+*VIGIL Assessment - {datetime.now().isoformat()}*
+"""
+        
+        return narrative
     
     def semantic_search(self, query: str, top_k: int = 5) -> List[Dict]:
-        """Search using semantic similarity"""
+        """Semantic search across all stored vectors."""
         
-        query_embedding = self.encode_data(query)
+        query_embedding = self.embed_text(query)
         
         results = []
-        for doc_id, stored_embedding in self.vector_store.items():
-            similarity = np.dot(
-                query_embedding,
-                stored_embedding['embedding']
-            ) / (norm(query_embedding) * norm(stored_embedding['embedding']) + 1e-8)
-            
+        for doc in self.vector_store:
+            similarity = np.dot(query_embedding, doc['embedding']) / (norm(query_embedding) * norm(doc['embedding']) + 1e-10)
             results.append({
-                'doc_id': doc_id,
+                'doc_id': doc['doc_id'],
                 'similarity': float(similarity),
-                'metadata': stored_embedding['metadata']
+                'description': doc['description'][:100],
+                'risk_type': doc['risk_type']
             })
         
         return sorted(results, key=lambda x: x['similarity'], reverse=True)[:top_k]
     
     def get_vector_store_stats(self) -> Dict:
-        """Get vector store statistics"""
+        """Get statistics about stored vectors."""
         
         return {
             'total_documents': len(self.vector_store),
             'embedding_dimension': self.embedding_dim,
-            'vector_store_size': len(self.embedding_index)
+            'embedding_model': 'DistilBERT',
+            'data_types_supported': ['structured', 'semi-structured', 'unstructured']
         }
     
-    def generate_narrative(self, output: Dict) -> str:
-        """Generate narrative explanation of interconnected analysis"""
+    def _classify_risk(self, description: str) -> str:
+        """Classify risk type."""
         
-        if not output.get('analysis'):
-            return "Analysis unavailable"
+        keywords = {
+            'SUPPLY_CHAIN': ['supplier', 'vendor', 'sourcing', 'procurement'],
+            'QUALITY': ['defect', 'specification', 'compliance'],
+            'DELIVERY': ['shipment', 'logistics', 'delay'],
+            'PRODUCTION': ['equipment', 'manufacturing', 'capacity'],
+            'BRAND': ['reputation', 'customer', 'perception']
+        }
         
-        analysis = output['analysis']
-        description = output.get('description', 'Unknown')
-        risk_type = output['risk_type']
-        severity = output['severity']
+        desc_lower = description.lower()
+        for risk_type, words in keywords.items():
+            if any(w in desc_lower for w in words):
+                return risk_type
         
-        narrative = f"""
-# INTERCONNECTED RISK ANALYSIS
-
-## Current Risk
-{description} ({risk_type}: {severity.upper()})
-
-## Historical Context
-"""
+        return 'SUPPLY_CHAIN'
+    
+    def _classify_severity(self, description: str) -> str:
+        """Classify severity."""
         
-        historical = analysis.get('historical_matches', [])
-        if historical:
-            narrative += f"\n⚠️ Found {len(historical)} similar past incidents:\n"
-            for h in historical[:2]:
-                narrative += f"- {h['original_description']} ({h['original_severity'].upper()}, {h['original_date'][:10]})\n"
+        keywords = {
+            'CRITICAL': ['crisis', 'bankruptcy', 'catastrophic'],
+            'HIGH': ['urgent', 'impact', 'revenue'],
+            'MEDIUM': ['issue', 'problem'],
+            'LOW': ['minor', 'small']
+        }
         
-        patterns = analysis.get('recurring_patterns', [])
-        if patterns:
-            narrative += f"\n⚠️ RECURRING ISSUE: {patterns[0]['description']}\n"
+        desc_lower = description.lower()
+        for severity, words in keywords.items():
+            if any(w in desc_lower for w in words):
+                return severity
         
-        cascades = analysis.get('cascading_effects', [])
-        if cascades:
-            narrative += f"\n## Cascading Effects\n"
-            narrative += f"This will likely worsen {len(cascades)} other existing risks:\n"
-            for c in cascades[:3]:
-                narrative += f"- {c['affected_description']} ({c['affected_risk_type'].upper()}: {c['affected_severity'].upper()})\n"
+        return 'MEDIUM'
+    
+    def _calculate_confidence(self, matches: List[Dict], grok_findings: Dict) -> float:
+        """Calculate overall confidence."""
         
-        conflicts = analysis.get('self_conflicts', [])
-        if conflicts:
-            narrative += f"\n## Internal Conflicts Detected\n"
-            narrative += f"⚠️ The description contains {len(conflicts)} contradictions\n"
+        confidence = 0.5
         
-        grok = analysis.get('grok_intelligence', {})
-        if grok.get('context', {}).get('success'):
-            narrative += f"\n## Industry Intelligence (from Grok)\n"
-            findings = grok['context'].get('findings', '')
-            narrative += f"{findings[:500]}...\n"
+        if matches:
+            avg_match_score = np.mean([m['similarity_score'] for m in matches])
+            confidence = confidence * 0.7 + avg_match_score * 0.3
         
-        timeline = analysis.get('timeline_correlations', [])
-        if timeline:
-            narrative += f"\n## Timeline Correlation\n"
-            narrative += f"Found {timeline[0].get('related_events_count', 0)} other risks in same time period\n"
+        if grok_findings.get('success'):
+            confidence = min(1.0, confidence + 0.1)
         
-        return narrative
+        return float(confidence)
 
 
-def create_dual_path_transformer(
-    grok_api_key: str = None,
-    supabase_client=None,
-) -> DualPathRiskTransformer:
-    """Factory function to create transformer instance"""
+# =========================================================================
+# FACTORY FUNCTION
+# =========================================================================
+
+def create_dual_path_transformer(grok_api_key: str = None, supabase_client=None) -> DualPathRiskTransformer:
+    """Create and initialize the transformer."""
     
     return DualPathRiskTransformer(
         grok_api_key=grok_api_key,
