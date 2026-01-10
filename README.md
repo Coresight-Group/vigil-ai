@@ -1,4 +1,4 @@
- ---
+---
 title: VIGIL Risk Intelligence
 emoji: ⚠️
 colorFrom: gray
@@ -38,6 +38,7 @@ tags:
   - docker
   - transformers
 ---
+
 
 # ⚠️ VIGIL: Enterprise Risk Intelligence System
 
