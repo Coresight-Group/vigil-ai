@@ -19,8 +19,9 @@ XAI_API_KEY=xai_your_token
 # ============================================================================
 # SUPABASE DATABASE - REQUIRED
 # ============================================================================
-SUPABASE_URL=https://supabase.com/dashboard/project/tnnordgkvyuxhswcmqks
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRubm9yZGdrdnl1eHhzd2NtcWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNTY3MDcsImV4cCI6MjA4MTczMjcwN30.E3opit0xteT4V83AP8lfwC-dDf51NiHmB4jZ4W5c6WE
+# Set these in your deployment environment secrets (HF Spaces, Docker Compose, etc.)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
 
 # ============================================================================
 # FLASK CONFIGURATION
@@ -60,7 +61,7 @@ DEBUG=false
 # ============================================================================
 
 # Claude model to use
-CLAUDE_MODEL=claude-opus-4-1
+CLAUDE_MODEL=claude-opus-4-20250514
 
 # Grok model to use
 GROK_MODEL=grok-2
