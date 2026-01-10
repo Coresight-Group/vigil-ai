@@ -10,7 +10,7 @@
 ANTHROPIC_API_KEY=sk-ant-YOUR_KEY_HERE
 
 # ============================================================================
-# XAI GROK API - OPTIONAL
+# XAI GROK API - REQUIRED
 # ============================================================================
 # Get your API key from: https://console.x.ai/account/keys
 # Format: xai_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -19,9 +19,8 @@ XAI_API_KEY=xai_your_token
 # ============================================================================
 # SUPABASE DATABASE - REQUIRED
 # ============================================================================
-# Set these in your deployment environment secrets (HF Spaces, Docker Compose, etc.)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+SUPABASE_URL=https://supabase.com/dashboard/project/tnnordgkvyuxhswcmqks
+SUPABASE_KEY=sb_secret_DCyGuhG_QkVZM6LMy2P7KQ_phlQdm55
 
 # ============================================================================
 # FLASK CONFIGURATION
@@ -61,7 +60,7 @@ DEBUG=false
 # ============================================================================
 
 # Claude model to use
-CLAUDE_MODEL=claude-opus-4-20250514
+CLAUDE_MODEL=claude-opus-4-1
 
 # Grok model to use
 GROK_MODEL=grok-2
