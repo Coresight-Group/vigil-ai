@@ -20,7 +20,7 @@ XAI_API_KEY=xai_your_token
 # SUPABASE DATABASE - REQUIRED
 # ============================================================================
 SUPABASE_URL=https://supabase.com/dashboard/project/tnnordgkvyuxhswcmqks
-SUPABASE_KEY=sb_secret_DCyGuhG_QkVZM6LMy2P7KQ_phlQdm55
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRubm9yZGdrdnl1eGhzd2NtcWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNTY3MDcsImV4cCI6MjA4MTczMjcwN30.E3opit0xteT4V83AP8lfwC-dDf51NiHmB4jZ4W5c6WE
 
 # ============================================================================
 # FLASK CONFIGURATION
