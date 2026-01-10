@@ -1,0 +1,69 @@
+# ============================================================================
+# VIGIL - Risk Assessment Engine Configuration
+# ============================================================================
+
+# ============================================================================
+# ANTHROPIC API (Claude AI) - REQUIRED
+# ============================================================================
+# Get your API key from: https://console.anthropic.com/account/keys
+# Format: sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ANTHROPIC_API_KEY=sk-ant-YOUR_KEY_HERE
+
+# ============================================================================
+# XAI GROK API - OPTIONAL
+# ============================================================================
+# Get your API key from: https://console.x.ai/account/keys
+# Format: xai_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+XAI_API_KEY=xai_your_token
+
+# ============================================================================
+# SUPABASE DATABASE - REQUIRED
+# ============================================================================
+SUPABASE_URL=https://supabase.com/dashboard/project/tnnordgkvyuxhswcmqks
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRubm9yZGdrdnl1eHhzd2NtcWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNTY3MDcsImV4cCI6MjA4MTczMjcwN30.E3opit0xteT4V83AP8lfwC-dDf51NiHmB4jZ4W5c6WE
+
+# ============================================================================
+# FLASK CONFIGURATION
+# ============================================================================
+
+# Environment (development, staging, production)
+FLASK_ENV=development
+
+# Flask debug mode (true/false)
+FLASK_DEBUG=true
+
+# Flask app port
+FLASK_PORT=5000
+
+# ============================================================================
+# TESTING CONFIGURATION
+# ============================================================================
+
+# Test organization UUID (for local testing)
+TEST_ORG_ID=550e8400-e29b-41d4-a716-446655440000
+
+# Test user UUID (for local testing)
+TEST_USER_ID=550e8400-e29b-41d4-a716-446655440001
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOG_LEVEL=INFO
+
+# Enable debug logging
+DEBUG=false
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+
+# Claude model to use
+CLAUDE_MODEL=claude-opus-4-1
+
+# Grok model to use
+GROK_MODEL=grok-2
+
+# Maximum tokens for Claude responses
+MAX_TOKENS=4000
