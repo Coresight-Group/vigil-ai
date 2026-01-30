@@ -1,6 +1,6 @@
 """
 VIGIL Push Script - Push to GitHub
-Run: python push_both.py
+Run: python push push.py
 """
 
 import subprocess
