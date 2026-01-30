@@ -1,0 +1,107 @@
+# ============================================================================
+# .HTACCESS FOR HOSTINGER SHARED HOSTING (IF APPLICABLE)
+# Note: For VPS with Nginx, this file is NOT used
+# Only use this if deploying to shared hosting with Apache
+# ============================================================================
+
+# Enable rewrite engine
+RewriteEngine On
+
+# ============================================================================
+# SECURITY HEADERS
+# ============================================================================
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# ============================================================================
+# FORCE HTTPS
+# ============================================================================
+
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ============================================================================
+# PYTHON/WSGI CONFIGURATION
+# ============================================================================
+
+# For Passenger (if available on shared hosting)
+PassengerAppRoot /home/username/vigil_ai
+PassengerAppType wsgi
+PassengerStartupFile wsgi.py
+
+# Python path
+PassengerPython /home/username/vigil_ai/venv/bin/python
+
+# ============================================================================
+# PROXY TO PYTHON APP (Alternative method)
+# ============================================================================
+
+# If using proxy instead of Passenger
+# ProxyPreserveHost On
+# ProxyPass / http://127.0.0.1:8000/
+# ProxyPassReverse / http://127.0.0.1:8000/
+
+# ============================================================================
+# BLOCK SENSITIVE FILES
+# ============================================================================
+
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(env|ini|log|sql|py|pyc|pyo)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to Keys_Security folder
+<IfModule mod_rewrite.c>
+    RewriteRule ^Keys_Security/ - [F,L]
+    RewriteRule ^\.env - [F,L]
+    RewriteRule ^\.git - [F,L]
+</IfModule>
+
+# ============================================================================
+# COMPRESSION
+# ============================================================================
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# ============================================================================
+# CACHING
+# ============================================================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# ============================================================================
+# ERROR DOCUMENTS
+# ============================================================================
+
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html
+ErrorDocument 502 /502.html
+ErrorDocument 503 /503.html

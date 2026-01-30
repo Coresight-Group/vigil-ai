@@ -1,0 +1,319 @@
+/* ============================================
+   ADMIN ACCESS TAB STYLES
+   ============================================ */
+
+.admin-section {
+    margin-bottom: 32px;
+}
+
+.admin-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #CBA340;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+}
+
+/* User List */
+.user-list-container {
+    background-color: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.user-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 2fr 1fr;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #111111;
+    border-bottom: 1px solid #222222;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.user-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.user-item {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 2fr 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.user-item:hover {
+    background-color: #0f0f0f;
+}
+
+.user-item:last-child {
+    border-bottom: none;
+}
+
+.user-username {
+    font-size: 13px;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.user-status {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    width: fit-content;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.status-inactive {
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+}
+
+.status-disabled {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.user-last-login {
+    font-size: 12px;
+    color: #666666;
+}
+
+.user-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.user-action-btn {
+    background: none;
+    border: 1px solid #333333;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-action-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: #888888;
+}
+
+.user-action-btn:hover {
+    border-color: #CBA340;
+    background-color: rgba(203, 163, 64, 0.1);
+}
+
+.user-action-btn:hover svg {
+    stroke: #CBA340;
+}
+
+.user-action-btn.disable-btn:hover {
+    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.user-action-btn.disable-btn:hover svg {
+    stroke: #ef4444;
+}
+
+.user-action-btn.enable-btn:hover {
+    border-color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+.user-action-btn.enable-btn:hover svg {
+    stroke: #22c55e;
+}
+
+/* Admin Action Button */
+.admin-action-btn {
+    width: 100%;
+    background-color: #CBA340;
+    color: #000000;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.admin-action-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #000000;
+}
+
+.admin-action-btn:hover {
+    background-color: #d4b04a;
+    transform: translateY(-1px);
+}
+
+.admin-action-btn:active {
+    transform: translateY(0);
+}
+
+/* Activity Log */
+.activity-log {
+    background-color: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+    background-color: #0f0f0f;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.activity-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.activity-login {
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+.activity-login svg {
+    stroke: #22c55e;
+}
+
+.activity-logout {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.activity-logout svg {
+    stroke: #ef4444;
+}
+
+.activity-query {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.activity-query svg {
+    stroke: #3b82f6;
+}
+
+.activity-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.activity-user {
+    font-size: 13px;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.activity-action {
+    font-size: 12px;
+    color: #888888;
+}
+
+.activity-time {
+    font-size: 11px;
+    color: #666666;
+    margin-top: 2px;
+}
+
+/* Admin Only Elements */
+.admin-only-tab {
+    display: none;
+}
+
+/* Responsive Design for Admin Tab */
+@media (max-width: 768px) {
+    .user-list-header,
+    .user-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .user-list-header {
+        display: none;
+    }
+
+    .user-item {
+        padding: 12px;
+    }
+
+    .user-username::before {
+        content: 'Username: ';
+        color: #888888;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .user-status::before {
+        content: 'Status: ';
+        color: #888888;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .user-last-login::before {
+        content: 'Last Login: ';
+        color: #888888;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .user-actions {
+        justify-content: flex-start;
+        margin-top: 8px;
+    }
+}

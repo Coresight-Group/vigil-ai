@@ -1,0 +1,1 @@
+Slack(in-app alerts), Nginx(Reverse Proxy Support), Hostingr(Paid)(VPS Hosting, Domain Hosting)

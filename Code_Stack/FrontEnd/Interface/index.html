@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIGIL</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Document Search Bar (Top Center) -->
+        <div class="doc-search-container" id="docSearchContainer">
+            <div class="doc-search-bar" id="docSearchBar">
+                <svg class="doc-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="M21 21l-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="doc-search-input" id="docSearchInput" placeholder="Search documents...">
+            </div>
+        </div>
+
+        <!-- Document Search Overlay -->
+        <div class="doc-search-overlay" id="docSearchOverlay">
+            <div class="doc-search-results-container">
+                <div class="doc-search-header">
+                    <span class="doc-search-title">Search Results</span>
+                    <button class="doc-search-close" id="docSearchClose">&times;</button>
+                </div>
+                <div class="doc-search-results" id="docSearchResults">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Toggle Button -->
+        <button class="alerts-toggle" id="alertsToggle" aria-label="View alerts" aria-haspopup="dialog">
+            <svg class="alerts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="alerts-badge" id="alertsBadge" aria-label="3 new alerts">3</span>
+        </button>
+
+        <!-- Chat History Toggle Button -->
+        <button class="history-toggle" id="historyToggle" aria-label="View chat history" aria-haspopup="dialog">
+            <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 8v4l3 3"></path>
+                <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+        </button>
+
+        <!-- Settings Toggle Button -->
+        <button class="settings-toggle" id="settingsToggle" aria-label="Open settings" aria-haspopup="dialog">
+            <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </button>
+
+        <!-- Chat History Panel -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-bubble">
+                <!-- History Header -->
+                <div class="history-header">
+                    <span class="history-panel-title">HISTORY</span>
+                    <button class="history-close" id="historyClose">&times;</button>
+                </div>
+
+                <div class="history-list" id="historyList">
+                    <!-- Chat sessions will be populated here -->
+                </div>
+                <button class="history-new-chat" id="historyNewChat">+ New Chat</button>
+            </div>
+        </div>
+
+        <!-- Alerts Panel -->
+        <div class="alerts-panel" id="alertsPanel">
+            <div class="alerts-bubble">
+                <!-- Alerts Header -->
+                <div class="alerts-header">
+                    <span class="alerts-panel-title">ALERTS</span>
+                    <button class="alerts-close" id="alertsClose">&times;</button>
+                </div>
+
+                <!-- Alert List -->
+                <div class="alert-list" id="alertList">
+                    <div class="alert-item" data-alert-id="1">
+                        <div class="alert-item-header">
+                            <span class="alert-dot critical"></span>
+                            <span class="alert-title">Supply Chain Disruption Detected</span>
+                        </div>
+                        <p class="alert-summary">Major supplier in Southeast Asia reporting production halt. Expected downtime of 2-3 weeks affecting critical component supply.</p>
+                    </div>
+                    <div class="alert-item" data-alert-id="2">
+                        <div class="alert-item-header">
+                            <span class="alert-dot high"></span>
+                            <span class="alert-title">Quality Control Anomaly</span>
+                        </div>
+                        <p class="alert-summary">Batch #4521 showing deviation from standard parameters. Tensile strength readings 12% below threshold on 3 consecutive samples.</p>
+                    </div>
+                    <div class="alert-item" data-alert-id="3">
+                        <div class="alert-item-header">
+                            <span class="alert-dot medium"></span>
+                            <span class="alert-title">Market Volatility Warning</span>
+                        </div>
+                        <p class="alert-summary">Commodity prices showing unusual fluctuation. Steel prices up 8% in 48 hours, aluminum showing similar trajectory.</p>
+                    </div>
+                </div>
+
+                <!-- Alert Detail View (hidden by default) -->
+                <div class="alert-detail-view" id="alertDetailView">
+                    <button class="alert-back" id="alertBack">&larr; Back</button>
+
+                    <div class="alert-detail-header">
+                        <span class="alert-dot" id="detailDot"></span>
+                        <span class="alert-detail-title" id="detailTitle"></span>
+                    </div>
+
+                    <div class="alert-sections">
+                        <div class="alert-section">
+                            <div class="section-label">Summary</div>
+                            <div class="section-content" id="detailSummary"></div>
+                        </div>
+                        <div class="alert-section">
+                            <div class="section-label">Impact</div>
+                            <div class="section-content" id="detailImpact"></div>
+                        </div>
+                        <div class="alert-section">
+                            <div class="section-label">Timeline</div>
+                            <div class="section-content" id="detailTimeline"></div>
+                        </div>
+                        <div class="alert-section">
+                            <div class="section-label">Affected Areas</div>
+                            <div class="section-content" id="detailAffected"></div>
+                        </div>
+                    </div>
+
+                    <button class="alert-chat-btn" id="alertChatBtn">Analyze</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-overlay" id="settingsOverlay">
+            <div class="settings-panel">
+                <!-- Settings Title -->
+                <span class="settings-title">SETTINGS</span>
+
+                <!-- Close Button -->
+                <button class="settings-close" id="settingsClose">&times;</button>
+
+                <!-- Tab Navigation -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="account">Account</button>
+                    <button class="settings-tab admin-only-tab" data-tab="admin" style="display: none;">Admin Access</button>
+                    <button class="settings-tab" data-tab="logout">Log Out</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="settings-content">
+                    <!-- Account Tab -->
+                    <div class="settings-tab-content active" id="accountTab">
+                        <div class="account-section">
+                            <div class="account-field">
+                                <label class="field-label">Username</label>
+                                <div class="field-value-container">
+                                    <span class="field-value encrypted" id="usernameValue">••••••••••••</span>
+                                    <button class="reveal-btn" id="revealUsername" title="Reveal">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="account-field">
+                                <label class="field-label">Password</label>
+                                <div class="field-value-container">
+                                    <span class="field-value encrypted" id="passwordValue">••••••••••••</span>
+                                    <button class="reveal-btn" id="revealPassword" title="Reveal">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Admin Email (visible for both USER and ADMIN, but only revealable by ADMIN) -->
+                            <div class="account-field" id="adminEmailField">
+                                <label class="field-label">Admin Email</label>
+                                <div class="field-value-container">
+                                    <span class="field-value encrypted" id="adminEmailValue">••••••••••••</span>
+                                    <button class="reveal-btn admin-only-btn" id="revealAdminEmail" title="Reveal" data-tooltip="Accessible by ADMIN only">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Authentication Section -->
+                        <div class="auth-section">
+                            <div class="auth-info">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <span>To reveal or edit credentials, an authentication code will be sent to the account admin.</span>
+                            </div>
+                            <button class="send-auth-btn" id="sendAuthCode">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                Send Authentication Code
+                            </button>
+
+                            <!-- Auth Code Input (hidden by default) -->
+                            <div class="auth-code-input" id="authCodeInput" style="display: none;">
+                                <input type="text" class="code-input" id="codeInput" placeholder="Enter 6-digit code" maxlength="6">
+                                <button class="verify-btn" id="verifyCode">Verify</button>
+                            </div>
+
+                            <div class="auth-status" id="authStatus"></div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Access Tab -->
+                    <div class="settings-tab-content admin-only-tab" id="adminTab" style="display: none;">
+                        <div class="admin-section">
+                            <h3 class="admin-section-title">User Management</h3>
+
+                            <!-- User List -->
+                            <div class="user-list-container">
+                                <div class="user-list-header">
+                                    <span class="header-username">Username</span>
+                                    <span class="header-status">Status</span>
+                                    <span class="header-last-login">Last Login</span>
+                                    <span class="header-actions">Actions</span>
+                                </div>
+                                <div class="user-list" id="userList">
+                                    <!-- Users will be dynamically loaded here -->
+                                    <div class="user-item">
+                                        <span class="user-username">john_doe</span>
+                                        <span class="user-status status-active">Active</span>
+                                        <span class="user-last-login">2 minutes ago</span>
+                                        <div class="user-actions">
+                                            <button class="user-action-btn" title="View Details">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </button>
+                                            <button class="user-action-btn disable-btn" title="Disable User">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="user-item">
+                                        <span class="user-username">jane_smith</span>
+                                        <span class="user-status status-inactive">Logged Out</span>
+                                        <span class="user-last-login">1 hour ago</span>
+                                        <div class="user-actions">
+                                            <button class="user-action-btn" title="View Details">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </button>
+                                            <button class="user-action-btn disable-btn" title="Disable User">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="user-item">
+                                        <span class="user-username">bob_wilson</span>
+                                        <span class="user-status status-disabled">Disabled</span>
+                                        <span class="user-last-login">Never</span>
+                                        <div class="user-actions">
+                                            <button class="user-action-btn" title="View Details">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </button>
+                                            <button class="user-action-btn enable-btn" title="Enable User">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create User Button -->
+                            <button class="admin-action-btn" id="createUserBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                                </svg>
+                                Create New User
+                            </button>
+                        </div>
+
+                        <!-- Activity Log Section -->
+                        <div class="admin-section">
+                            <h3 class="admin-section-title">Recent Activity</h3>
+                            <div class="activity-log" id="activityLog">
+                                <div class="activity-item">
+                                    <div class="activity-icon activity-login">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                                            <polyline points="10 17 15 12 10 7"></polyline>
+                                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="activity-details">
+                                        <span class="activity-user">john_doe</span>
+                                        <span class="activity-action">logged in</span>
+                                        <span class="activity-time">2 minutes ago</span>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon activity-query">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <path d="m21 21-4.35-4.35"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="activity-details">
+                                        <span class="activity-user">jane_smith</span>
+                                        <span class="activity-action">searched for "CVE-2024"</span>
+                                        <span class="activity-time">15 minutes ago</span>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon activity-logout">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                            <polyline points="16 17 21 12 16 7"></polyline>
+                                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="activity-details">
+                                        <span class="activity-user">jane_smith</span>
+                                        <span class="activity-action">logged out</span>
+                                        <span class="activity-time">1 hour ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log Out Tab -->
+                    <div class="settings-tab-content" id="logoutTab">
+                        <div class="logout-section">
+                            <div class="logout-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                            </div>
+                            <h3 class="logout-title">Sign out of your account?</h3>
+                            <p class="logout-description">You will need to sign in again to access Vigil.</p>
+                            <button class="logout-btn" id="logoutBtn">Sign Out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo Container (for 3D movement) -->
+        <div class="logo-container" id="logoContainer">
+            <img src="logo.png" alt="VIGIL" class="logo" id="logo">
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div class="messages-container">
+            <div class="messages" id="messages">
+            </div>
+            <div class="custom-scrollbar" id="customScrollbar">
+                <div class="custom-scrollbar-thumb" id="customScrollbarThumb"></div>
+            </div>
+        </div>
+
+        <!-- Input Overlay (for expanded state) -->
+        <div class="input-overlay" id="inputOverlay"></div>
+
+        <!-- Input Area -->
+        <div class="input-section" role="form" aria-label="Message input">
+            <!-- Attachment Container -->
+            <div class="attach-container" id="attachContainer">
+                <button class="attach-trigger" id="attachTrigger" title="Attach file" aria-label="Attach file">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                </button>
+                <div class="attach-menu" id="attachMenu">
+                    <button class="menu-item" id="docBtn" title="Document" aria-label="Attach document">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="photoBtn" title="Photo" aria-label="Attach photo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21,15 16,10 5,21"></polyline>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="audioBtn" title="Audio" aria-label="Attach audio">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 18V5l12-2v13"></path>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <circle cx="18" cy="16" r="3"></circle>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="videoBtn" title="Video" aria-label="Attach video">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polygon points="23,7 16,12 23,17 23,7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="input-progress" id="inputProgress">
+                    <div class="input-progress-bar" id="inputProgressBar"></div>
+                </div>
+                <textarea
+                    id="input"
+                    class="input"
+                    placeholder="Type your message..."
+                    aria-label="Message input"
+                    rows="1"
+                ></textarea>
+                <button class="expand-btn" id="expandBtn" title="Expand input" aria-label="Expand input">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </button>
+            </div>
+            <button class="send-btn" id="sendBtn" aria-label="Send message"><img src="send.png" alt="Send" class="send-icon"></button>
+
+            <!-- Hidden File Inputs -->
+            <input type="file" id="docInput" hidden accept=".txt,.pdf,.doc,.docx,.xlsx,.csv">
+            <input type="file" id="photoInput" hidden accept="image/*">
+            <input type="file" id="audioInput" hidden accept="audio/*">
+            <input type="file" id="videoInput" hidden accept="video/*">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

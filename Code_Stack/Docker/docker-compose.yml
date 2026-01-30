@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  vigil-app:
+    build:
+      context: ../Backend
+      dockerfile: ../Docker/Dockerfile
+    container_name: vigil-risk-management
+    ports:
+      - "5000:5000"
+    env_file:
+      - ../.env
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      # Required API keys - set in .env file or pass directly
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    volumes:
+      # Mount frontend files for development (optional)
+      - ../FrontEnd:/app/frontend:ro
+    networks:
+      - vigil-network
+
+networks:
+  vigil-network:
+    driver: bridge

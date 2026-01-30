@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIGIL - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Orbitron:wght@600;700&family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <!-- Logo and Branding -->
+        <div class="brand-header">
+            <div class="brand-logo">
+                <img src="logo.png" alt="V" class="logo-letter">
+                <span class="brand-name">IGIL</span>
+            </div>
+            <p class="brand-tagline">Risk Intelligence Powered by Coresight Group</p>
+        </div>
+
+        <!-- Dual Login Panels -->
+        <div class="login-panels">
+            <!-- User Login Panel (Left) -->
+            <div class="login-panel user-panel">
+                <div class="panel-header">
+                    <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <h2 class="panel-title">USER LOGIN</h2>
+                </div>
+
+                <form class="login-form" id="userLoginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-input" id="userUsername" placeholder="Enter username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="password-container">
+                            <input type="password" class="form-input" id="userPassword" placeholder="Enter password" required>
+                            <button type="button" class="toggle-password" data-target="userPassword">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-btn user-btn">
+                        <span>Sign In</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+
+                    <div class="form-status" id="userStatus"></div>
+
+                    <div class="form-footer">
+                        <div class="form-links">
+                            <button type="button" class="text-link" id="forgotPasswordUser">Forgot Password?</button>
+                            <button type="button" class="text-link" id="createUserAccount">Create Account</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Admin Login Panel (Right) -->
+            <div class="login-panel admin-panel">
+                <div class="panel-header">
+                    <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                    <h2 class="panel-title">ADMIN LOGIN</h2>
+                </div>
+
+                <form class="login-form" id="adminLoginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-input" id="adminUsername" placeholder="Enter admin username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="password-container">
+                            <input type="password" class="form-input" id="adminPassword" placeholder="Enter admin password" required>
+                            <button type="button" class="toggle-password" data-target="adminPassword">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-btn admin-btn">
+                        <span>Sign In</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Admin Authentication Code (Hidden by default) -->
+                    <div class="auth-verification" id="adminAuthVerification" style="display: none;">
+                        <div class="auth-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <span>A 6-digit code has been sent to your secure email</span>
+                        </div>
+                        <div class="code-input-group">
+                            <input type="text" class="code-input" id="adminAuthCode" placeholder="000000" maxlength="6" pattern="[0-9]{6}">
+                            <button type="button" class="verify-code-btn" id="verifyAdminCode">Verify</button>
+                        </div>
+                    </div>
+
+                    <div class="form-status" id="adminStatus"></div>
+
+                    <div class="form-footer">
+                        <div class="form-links">
+                            <button type="button" class="text-link" id="forgotPasswordAdmin">Forgot Password?</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div class="modal-overlay" id="forgotPasswordModal">
+            <div class="modal-content">
+                <button class="modal-close" id="closeForgotPassword">&times;</button>
+                <h3 class="modal-title">Reset Password</h3>
+                <p class="modal-description">An authentication code will be sent to your administrator for verification.</p>
+
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label class="form-label">Your Username</label>
+                        <input type="text" class="form-input" id="resetUsername" placeholder="For account verification" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Administrator Full Name</label>
+                        <input type="text" class="form-input" id="resetAdminName" placeholder="Enter admin's full name" required>
+                    </div>
+                    <button type="submit" class="modal-btn">Send Reset Code to Admin</button>
+                    <div class="form-status" id="resetStatus"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Create User Account Modal -->
+        <div class="modal-overlay" id="createAccountModal">
+            <div class="modal-content">
+                <button class="modal-close" id="closeCreateAccount">&times;</button>
+                <h3 class="modal-title">Create User Account</h3>
+                <p class="modal-description">Request access from your administrator. A verification code will be sent to the admin's secure email.</p>
+
+                <form id="createAccountForm">
+                    <div class="form-group">
+                        <label class="form-label">Desired Username</label>
+                        <input type="text" class="form-input" id="newUsername" placeholder="Enter desired username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Administrator Full Name</label>
+                        <input type="text" class="form-input" id="newAdminName" placeholder="Enter admin's full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="newPassword" placeholder="Enter password" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter password" required>
+                    </div>
+                    <button type="submit" class="modal-btn">Request Admin Approval</button>
+                    <div class="form-status" id="createStatus"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <p>&copy; 2026 Coresight Group. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

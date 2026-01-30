@@ -1,0 +1,74 @@
+# ============================================================================
+# SYSTEMD SERVICE FILE FOR VIGIL AI
+# Location: /etc/systemd/system/vigil.service
+# ============================================================================
+
+[Unit]
+Description=Vigil AI Backend Service
+Documentation=https://github.com/your-repo/vigil-ai
+After=network.target
+After=syslog.target
+
+[Service]
+# Service type
+Type=notify
+
+# User and group (create a dedicated user for security)
+User=vigil
+Group=www-data
+
+# Working directory
+WorkingDirectory=/var/www/vigil/backend
+
+# Environment file location
+EnvironmentFile=/var/www/vigil/Keys_Security/env
+
+# Runtime directory for PID and socket files
+RuntimeDirectory=gunicorn
+RuntimeDirectoryMode=755
+
+# Start command - uses app.py as the WSGI entry point
+ExecStart=/var/www/vigil/venv/bin/gunicorn \
+    --config /var/www/vigil/backend/deployment/gunicorn.conf.py \
+    --bind unix:/var/run/gunicorn/vigil.sock \
+    app:app
+
+# Reload command
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Stop command
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Kill mode
+KillMode=mixed
+
+# Timeout for startup
+TimeoutStartSec=30
+
+# Timeout for stop
+TimeoutStopSec=30
+
+# Private /tmp directory for security
+PrivateTmp=true
+
+# Standard output and error logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vigil-ai
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening (optional but recommended)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/vigil /var/log/gunicorn /var/run/gunicorn
+
+[Install]
+WantedBy=multi-user.target
